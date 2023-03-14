@@ -8,7 +8,9 @@ connectDB();
 
 const app = express();
 app.use(express.json());
+// TODO: All tasks will be using auth middleware, move it here.
 app.use('/api/tasks', taskRoutes);
+// TODO: Enable CORS also
 app.use('/api/users', userRoutes);
 
 const PORT = config.get('PORT');

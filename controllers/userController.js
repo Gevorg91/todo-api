@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const config = require('config');
 
 // Generate JWT token
+// TODO: Generate two tokens for Refresh and Access cases.
 const generateToken = (id) => {
     return jwt.sign({ id }, config.get('JWT_SECRET'), { expiresIn: '1h' });
 };
@@ -14,6 +15,7 @@ exports.register = async (req, res) => {
         const user = new User({ username, password });
         await user.save();
 
+        // TODO: Two tokens.
         const token = generateToken(user._id);
         res.status(201).json({ user, token });
     } catch (error) {
@@ -37,3 +39,11 @@ exports.login = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+
+// TODO: We need an endpoint to refresh token, please research the best practices but in general it should
+// TODO: involve some specific headers. Also there is a difference from client side between mobile and web. 
+// TODO: We need to research that part as well.
+
+// TODO: We need to add email verification logic, there are some packages that will help with that. We may start thinking
+// TODO: about this if decided to go with node.js solution instead of AWS.

@@ -11,7 +11,7 @@ const auth = async (req, res, next) => {
         if (!user) {
             throw new Error('User not found');
         }
-
+        // TODO: This is related to the other comment for User schema to include tokens as well.
         req.user = user;
         req.token = token;
         next();
