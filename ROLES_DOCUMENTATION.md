@@ -205,7 +205,34 @@ app.put('/tasks/:id', checkPermission('tasks', 'update'), function(req, res) {})
 app.delete('/tasks/:id', checkPermission('tasks', 'delete'), function(req, res) {});
 ```
 
+## Thirty Party Packages
 
+We can use a package called CASL Ability, it has very simple syntax anc can scale very good.
+Also iot has almost half million weekly downloads. When you add a member to a workspace, or
+when  user creates a workspace we need to create roles with `can` syntax. For example, the 
+following code defines roles to be able read everything inside the workspace, update everything,
+but delete only the entitites where the authorId belongs to current user.
+
+```javascript
+        const { can, cannot, build } = new AbilityBuilder(createMongoAbility);
+can('read', 'tasks');
+can('read', 'notes');
+can('read', 'events');
+can('read', 'stories');
+
+can('update', 'tasks');
+can('update', 'notes');
+can('update', 'events');
+can('update', 'stories');
+
+can('delete', 'tasks', { authorId: user.id });
+can('delete', 'notes', { authorId: user.id });
+can('delete', 'events', { authorId: user.id });
+can('delete', 'stories', { authorId: user.id });
+
+const roles = build();
+console.log(`The roles are: ${JSON.stringify(roles)}`)
+```
 
 
     
