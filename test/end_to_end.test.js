@@ -242,4 +242,65 @@ describe("End to End Integration Tests Suite ", () => {
         expect(tigranWorkspacesResponseAfterGevAddition.body[0].members[0].role).toBe("admin");
         expect(tigranWorkspacesResponseAfterGevAddition.body[0].members[1].role).toBe("member");
     });
+
+    it("Should forbid creation of a new task in wrong Workspace", async () => {
+        // Arrange
+        const tigranRegistrationResponse = await request(app).post("/api/users/register").send({
+            username: "me@tigranes.io",
+            password: "Pass1234!",
+        });
+
+        const gevorRegistrationResponse = await request(app).post("/api/users/register").send({
+            username: "gev@gmail.com",
+            password: "Pass1234!",
+        });
+
+        const gevorAccessToken = gevorRegistrationResponse.body.accessToken;
+        const gevorUserId = gevorRegistrationResponse.body.id;
+        const tigranAccessToken = tigranRegistrationResponse.body.accessToken;
+        const tigranUserId = tigranRegistrationResponse.body.id;
+
+        const gevorCreateNewWorkspace = await request(app)
+            .post("/api/workspaces/")
+            .set('Authorization', `Bearer ${gevorAccessToken}`)
+            .send({
+                name: "My First Workspace created By Gevor",
+            });
+
+        const gevorCreatedTask = await request(app)
+            .post("/api/tasks/")
+            .set('Authorization', `Bearer ${gevorAccessToken}`)
+            .send({
+                title: "Buy some staff",
+                description: "This is my first task",
+                workspace: gevorCreateNewWorkspace.body.id,
+                completed: false
+            });
+
+        const gevorCreatedTaskUpdated = await request(app)
+            .post("/api/tasks/")
+            .set('Authorization', `Bearer ${gevorAccessToken}`)
+            .send({
+                title: "Buy some staff - UPDATED",
+                description: "This is my first task",
+                workspace: gevorCreateNewWorkspace.body.id,
+                completed: false
+            });
+
+        // Act
+        const tigranUpdatesGevorTask = await request(app)
+            .post("/api/tasks/")
+            .set('Authorization', `Bearer ${tigranAccessToken}`)
+            .send({
+                title: "Buy some staff - UPDATED",
+                description: "This is my first task",
+                workspace: gevorCreateNewWorkspace.body.id,
+                completed: false
+            });
+
+        // Assert
+        expect(tigranUpdatesGevorTask.header['content-type']).toBe('application/json; charset=utf-8');
+        expect(tigranUpdatesGevorTask.statusCode).toBe(403);
+
+    })
 });
