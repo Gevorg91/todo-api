@@ -48,7 +48,7 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
         testApiServer.close();
     });
 
-    it("should forbid creation of a new task in wrong Workspace", async () => {
+    it("should forbid update because the user is not in the workspace", async () => {
         const gevCreateNewWorkspace = await request(app)
             .post("/api/workspaces/")
             .set('Authorization', `Bearer ${gevAccessToken}`)
