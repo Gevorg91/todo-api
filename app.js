@@ -31,7 +31,8 @@ process.on('uncaughtException', (error) => {
 });
 
 const PORT = config.get('PORT');
-app.listen(PORT, (error) => {
+
+const server = app.listen(PORT, (error) => {
     if (error) {
         console.error('Failed to start server:', error);
     } else {
@@ -39,4 +40,4 @@ app.listen(PORT, (error) => {
     }
 });
 
-module.exports = app;
+module.exports = { app, server };

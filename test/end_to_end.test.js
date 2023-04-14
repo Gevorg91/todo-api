@@ -1,11 +1,13 @@
 const mongoose = require("mongoose");
 const request = require("supertest");
-const app = require('../app')
+const systemUnderTest = require('../app');
 const {MongoMemoryServer} = require("mongodb-memory-server");
 
 describe("End to End Integration Tests Suite ", () => {
 
     let mongoServer;
+    let app = systemUnderTest.app;
+    let server = systemUnderTest.server;
 
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
@@ -20,6 +22,7 @@ describe("End to End Integration Tests Suite ", () => {
     afterAll(async () => {
         await mongoServer.stop();
         await mongoose.disconnect();
+        server.close();
     });
 
     it("should create new account by passing correct username and password", async () => {
@@ -243,7 +246,7 @@ describe("End to End Integration Tests Suite ", () => {
         expect(tigranWorkspacesResponseAfterGevAddition.body[0].members[1].role).toBe("member");
     });
 
-    it("Should forbid creation of a new task in wrong Workspace", async () => {
+    it("should forbid creation of a new task in wrong Workspace", async () => {
         // Arrange
         const tigranRegistrationResponse = await request(app).post("/api/users/register").send({
             username: "me@tigranes.io",
@@ -303,4 +306,107 @@ describe("End to End Integration Tests Suite ", () => {
         expect(tigranUpdatesGevorTask.statusCode).toBe(403);
 
     })
+
+    it("should not create a new account with an email address that is already in use", async () => {
+        // Arrange
+        const username = "me@tigranes.io";
+        const password = "Pass1234!";
+
+        await request(app).post("/api/users/register").send({
+            username: username,
+            password: password,
+        });
+
+        // Act
+        const res = await request(app).post("/api/users/register").send({
+            username: username,
+            password: password,
+        });
+
+        // Assert
+        expect(res.header['content-type']).toBe('application/json; charset=utf-8');
+        expect(res.statusCode).toBe(400);
+    });
+
+    it("should not sign in with an incorrect password", async () => {
+        // Arrange
+        await request(app).post("/api/users/register").send({
+            username: "me@tigranes.io",
+            password: "Pass1234!",
+        });
+
+        // Act
+        const signInResponse = await request(app).post("/api/users/login").send({
+            username: "me@tigranes.io",
+            password: "wrongpassword",
+        });
+
+        // Assert
+        expect(signInResponse.header['content-type']).toBe('application/json; charset=utf-8');
+        expect(signInResponse.statusCode).toBe(401);
+    });
+
+    it("should not create a new workspace without an access token", async () => {
+        // Arrange
+
+        // Act
+        const res = await request(app)
+            .post("/api/workspaces/")
+            .send({
+                name: "My First Workspace",
+            });
+
+        // Assert
+        expect(res.header['content-type']).toBe('application/json; charset=utf-8');
+        expect(res.statusCode).toBe(401);
+    });
+
+    it("should return a bad request when attempting to create a workspace with a missing name", async () => {
+        // Arrange
+        const responseFromRegistration = await request(app).post("/api/users/register").send({
+            username: "me@tigranes.io",
+            password: "Pass1234!",
+        });
+        const accessToken = responseFromRegistration.body.accessToken;
+
+        // Act
+        const res = await request(app)
+            .post("/api/workspaces/")
+            .set('Authorization', `Bearer ${accessToken}`)
+            .send({});
+
+        // Assert
+        expect(res.header['content-type']).toBe('application/json; charset=utf-8');
+        expect(res.statusCode).toBe(400);
+    });
+
+    it("should get a single workspace by ID", async () => {
+        // Arrange
+        const responseFromRegistration = await request(app).post("/api/users/register").send({
+            username: "me@tigranes.io",
+            password: "Pass1234!",
+        });
+        const accessToken = responseFromRegistration.body.accessToken;
+        const userId = responseFromRegistration.body.id;
+
+        const workspaceResponse = await request(app)
+            .post("/api/workspaces/")
+            .set('Authorization', `Bearer ${accessToken}`)
+            .send({
+                name: "My First Workspace",
+            });
+
+        const workspaceId = workspaceResponse.body.id;
+
+        // Act
+        const res = await request(app)
+            .get(`/api/workspaces/${workspaceId}`)
+            .set('Authorization', `Bearer ${accessToken}`);
+
+        // Assert
+        expect(res.header['content-type']).toBe('application/json; charset=utf-8');
+        expect(res.statusCode).toBe(200);
+        expect(res.body.name).toBe("My First Workspace");
+        expect(res.body.owner).toBe(userId);
+    });
 });
