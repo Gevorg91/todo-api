@@ -7,21 +7,19 @@ describe("End to End Integration Tests Suite ", () => {
 
     let mongoServer;
 
-    beforeEach(async () => {
-        await mongoose.disconnect();
+    beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = await mongoServer.getUri();
         await mongoose.connect(mongoUri);
     });
 
     afterEach(async () => {
-        await mongoose.disconnect();
-        await mongoServer.stop();
+        await mongoose.connection.dropDatabase()
     });
 
     afterAll(async () => {
-        await mongoose.disconnect();
         await mongoServer.stop();
+        await mongoose.disconnect();
     });
 
     it("should create new account by passing correct username and password", async () => {
@@ -112,78 +110,6 @@ describe("End to End Integration Tests Suite ", () => {
         expect(res.body[0].name).toBe("My First Workspace");
         expect(res.body[0].owner).toBe(userId);
     });
-
-    it("should get unauthorised when trying to access wrong Workspace", async () => {
-
-        // Arrange
-        const tigranRegistrationResponse = await request(app).post("/api/users/register").send({
-            username: "me@tigranes.io",
-            password: "Pass1234!",
-        });
-
-        const tigranAccessToken = tigranRegistrationResponse.body.accessToken;
-        const tigranUserId = tigranRegistrationResponse.body.id;
-
-        const gevorRegistrationResponse = await request(app).post("/api/users/register").send({
-            username: "gev@gmail.com",
-            password: "Pass1234!",
-        });
-
-        const gevorAccessToken = gevorRegistrationResponse.body.accessToken;
-        const gevorUserId = gevorRegistrationResponse.body.id;
-
-        await request(app)
-            .post("/api/workspaces/")
-            .set('Authorization', `Bearer ${gevorAccessToken}`)
-            .send({
-                name: "My First Workspace created By Gevor",
-            });
-
-        await request(app)
-            .post("/api/workspaces/")
-            .set('Authorization', `Bearer ${tigranAccessToken}`)
-            .send({
-                name: "My First Workspace created By Tigran",
-            });
-
-        // Act
-        const gevorWorkspacesResponse = await request(app)
-            .get("/api/workspaces/")
-            .set('Authorization', `Bearer ${gevorAccessToken}`)
-
-        const tigranWorkspacesResponse = await request(app)
-            .get("/api/workspaces/")
-            .set('Authorization', `Bearer ${tigranAccessToken}`)
-
-        const tigranUnauthorisedWorkspacesResponse = await request(app)
-            .get("/api/workspaces/")
-            .set('Authorization', `Bearer WRONG_ACCESS_TOKEN`)
-
-        // Assert
-
-        // Gevor
-        expect(gevorWorkspacesResponse.header['content-type']).toBe('application/json; charset=utf-8');
-        expect(gevorWorkspacesResponse.statusCode).toBe(200);
-        expect(gevorWorkspacesResponse.body.length).toBe(1);
-        expect(gevorWorkspacesResponse.body[0].name).toBe("My First Workspace created By Gevor");
-        expect(gevorWorkspacesResponse.body[0].owner).toBe(gevorUserId);
-        expect(gevorWorkspacesResponse.body[0].members[0].user).toBe(gevorUserId);
-        expect(gevorWorkspacesResponse.body[0].members[0].role).toBe("admin");
-
-        // Tigran
-        expect(tigranWorkspacesResponse.header['content-type']).toBe('application/json; charset=utf-8');
-        expect(tigranWorkspacesResponse.statusCode).toBe(200);
-        expect(tigranWorkspacesResponse.body.length).toBe(1);
-        expect(tigranWorkspacesResponse.body[0].name).toBe("My First Workspace created By Tigran");
-        expect(tigranWorkspacesResponse.body[0].owner).toBe(tigranUserId);
-        expect(tigranWorkspacesResponse.body[0].members[0].user).toBe(tigranUserId);
-        expect(tigranWorkspacesResponse.body[0].members[0].role).toBe("admin");
-
-        // Tigran Unauthorised
-        expect(tigranUnauthorisedWorkspacesResponse.header['content-type']).toBe('application/json; charset=utf-8');
-        expect(tigranUnauthorisedWorkspacesResponse.statusCode).toBe(401);
-    });
-
 
     it("should get unauthorised when trying to access wrong Workspace", async () => {
 

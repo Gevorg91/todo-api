@@ -8,7 +8,11 @@ const auth = require('./middleware/authMiddleware');
 const errorMiddleware = require('./middleware/errorMiddleware');
 const invalidSyntaxMiddleware = require('./middleware/invalidSyntaxMiddleware');
 
-connectDB();
+
+// TODO: This is a temporary work around to the known issue: https://github.com/Automattic/mongoose/issues/9348
+if (process.env.NODE_ENV !== 'test') {
+    await connectDB();
+}
 
 const app = express();
 app.use(express.json());
