@@ -11,7 +11,7 @@ const invalidSyntaxMiddleware = require('./middleware/invalidSyntaxMiddleware');
 
 // TODO: This is a temporary work around to the known issue: https://github.com/Automattic/mongoose/issues/9348
 if (process.env.NODE_ENV !== 'test') {
-    await connectDB();
+    connectDB();
 }
 
 const app = express();

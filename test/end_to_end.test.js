@@ -181,4 +181,65 @@ describe("End to End Integration Tests Suite ", () => {
         expect(tigranUnauthorisedWorkspacesResponse.header['content-type']).toBe('application/json; charset=utf-8');
         expect(tigranUnauthorisedWorkspacesResponse.statusCode).toBe(401);
     });
+
+    it("should add Gevor to Tigran's Workspace as a member", async () => {
+
+        // Arrange
+        const tigranRegistrationResponse = await request(app).post("/api/users/register").send({
+            username: "me@tigranes.io",
+            password: "Pass1234!",
+        });
+
+        const tigranAccessToken = tigranRegistrationResponse.body.accessToken;
+        const tigranUserId = tigranRegistrationResponse.body.id;
+
+        const gevorRegistrationResponse = await request(app).post("/api/users/register").send({
+            username: "gev@gmail.com",
+            password: "Pass1234!",
+        });
+
+        const gevorAccessToken = gevorRegistrationResponse.body.accessToken;
+        const gevorUserId = gevorRegistrationResponse.body.id;
+
+        await request(app)
+            .post("/api/workspaces/")
+            .set('Authorization', `Bearer ${gevorAccessToken}`)
+            .send({
+                name: "My First Workspace created By Gevor",
+            });
+
+        await request(app)
+            .post("/api/workspaces/")
+            .set('Authorization', `Bearer ${tigranAccessToken}`)
+            .send({
+                name: "My First Workspace created By Tigran",
+            });
+
+        // Act
+        await request(app)
+            .get("/api/workspaces/")
+            .set('Authorization', `Bearer ${gevorAccessToken}`)
+
+        const tigranWorkspacesResponse = await request(app)
+            .get("/api/workspaces/")
+            .set('Authorization', `Bearer ${tigranAccessToken}`)
+
+        await request(app)
+            .post(`/api/workspaces/${tigranWorkspacesResponse.body[0].id}/members`)
+            .set('Authorization', `Bearer ${tigranAccessToken}`)
+            .send({
+                member: {
+                    user: gevorUserId,
+                    role: "member"
+                }
+            });
+
+        const tigranWorkspacesResponseAfterGevAddition = await request(app)
+            .get("/api/workspaces/")
+            .set('Authorization', `Bearer ${tigranAccessToken}`)
+
+        // Assert
+        expect(tigranWorkspacesResponseAfterGevAddition.body[0].members[0].role).toBe("admin");
+        expect(tigranWorkspacesResponseAfterGevAddition.body[0].members[1].role).toBe("member");
+    });
 });
