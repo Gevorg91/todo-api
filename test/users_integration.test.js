@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const request = require("supertest");
 const {appFactory} = require("../appFactory")
 const {MongoMemoryServer} = require("mongodb-memory-server");
+const AppStartupConfig = require("../config/appStartupConfig");
 
 describe("End to End Integration Tests for Users flow ", () => {
 
@@ -12,7 +13,7 @@ describe("End to End Integration Tests for Users flow ", () => {
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
-        const {app, server} = appFactory(mongoUri)
+        const {app, server} = appFactory(new AppStartupConfig(mongoUri, 3000))
         testApp = app;
         testApiServer = server;
     });

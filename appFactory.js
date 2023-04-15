@@ -8,8 +8,8 @@ const auth = require('./middleware/authMiddleware');
 const errorMiddleware = require('./middleware/errorMiddleware');
 const invalidSyntaxMiddleware = require('./middleware/invalidSyntaxMiddleware');
 
-const appFactory = (mongoUri) => {
-    connectDB(mongoUri);
+const appFactory = (appStartupConfig) => {
+    connectDB(appStartupConfig.dbUri);
 
     const app = express();
     app.use(express.json());
@@ -27,7 +27,7 @@ const appFactory = (mongoUri) => {
         console.error('Uncaught Exception:', error);
     });
 
-    const PORT = config.get('PORT');
+    const PORT = appStartupConfig.port;
 
     const server = app.listen(PORT, (error) => {
         if (error) {
