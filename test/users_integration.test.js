@@ -11,7 +11,7 @@ describe("End to End Integration Tests for Users flow ", () => {
 
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
-        const mongoUri = await mongoServer.getUri();
+        const mongoUri = mongoServer.getUri();
         const {app, server} = appFactory(mongoUri)
         testApp = app;
         testApiServer = server;
