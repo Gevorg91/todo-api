@@ -19,7 +19,6 @@ exports.createAbilitiesForUserPerWorkspace = async (user, workspaceId) => {
             can(['read'], 'Task');
             break;
         default:
-            console.log("Something went wrong with the current member Workspace role")
             break;
     }
 

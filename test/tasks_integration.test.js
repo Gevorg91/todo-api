@@ -18,7 +18,7 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
-        const {app, server} = appFactory(new AppStartupConfig(mongoUri, 3000))
+        const {app, server} = await appFactory(new AppStartupConfig(mongoUri, 3000))
         testApp = app;
         testApiServer = server;
     });

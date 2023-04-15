@@ -29,13 +29,7 @@ const appFactory = async (appStartupConfig) => {
 
     const PORT = appStartupConfig.port;
 
-    const server = app.listen(PORT, (error) => {
-        if (error) {
-            console.error('Failed to start server:', error);
-        } else {
-            console.log(`Server running on port ${PORT} in ${config.get('NODE_ENV')} mode`);
-        }
-    });
+    const server = app.listen(PORT);
 
     return { app, server };
 }
