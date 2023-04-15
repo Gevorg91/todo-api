@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
 const request = require("supertest");
-const systemUnderTest = require('./testApp');
+const {appFactory} = require("../appFactory")
 const {MongoMemoryServer} = require("mongodb-memory-server");
 
 describe("End to End Integration Tests For Tasks Flow ", () => {
 
     let mongoServer;
-    let app = systemUnderTest.app;
-    let testApiServer = systemUnderTest.server;
+    let testApp;
+    let testApiServer;
 
     let tigranAccessToken;
     let tigranUserId;
@@ -17,11 +17,13 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = await mongoServer.getUri();
-        await mongoose.connect(mongoUri);
+        const {app, server} = appFactory(mongoUri)
+        testApp = app;
+        testApiServer = server;
     });
 
     beforeEach(async () => {
-        const tigranRegistrationResponse = await request(app).post("/api/users/register").send({
+        const tigranRegistrationResponse = await request(testApp).post("/api/users/register").send({
             username: "me@tigranes.io",
             password: "Pass1234!",
         });
@@ -29,7 +31,7 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
         tigranAccessToken = tigranRegistrationResponse.body.accessToken;
         tigranUserId = tigranRegistrationResponse.body.id;
 
-        const gevRegistrationResponse = await request(app).post("/api/users/register").send({
+        const gevRegistrationResponse = await request(testApp).post("/api/users/register").send({
             username: "gev@gmail.com",
             password: "Pass1234!",
         });
@@ -49,14 +51,14 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
     });
 
     it("should create a new task", async () => {
-        const gevCreateNewWorkspace = await request(app)
+        const gevCreateNewWorkspace = await request(testApp)
             .post("/api/workspaces/")
             .set('Authorization', `Bearer ${gevAccessToken}`)
             .send({
                 name: "My First Workspace created By Gevor",
             });
 
-        const gevCreatedTask = await request(app)
+        const gevCreatedTask = await request(testApp)
             .post("/api/tasks/")
             .set('Authorization', `Bearer ${gevAccessToken}`)
             .send({
@@ -71,14 +73,14 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
     })
 
     it("should forbid a creation of a new task", async () => {
-        const gevCreateNewWorkspace = await request(app)
+        const gevCreateNewWorkspace = await request(testApp)
             .post("/api/workspaces/")
             .set('Authorization', `Bearer ${gevAccessToken}`)
             .send({
                 name: "My First Workspace created By Gevor",
             });
 
-        const gevCreatedTask = await request(app)
+        const gevCreatedTask = await request(testApp)
             .post("/api/tasks/")
             .set('Authorization', `Bearer ${tigranAccessToken}`)
             .send({
@@ -93,14 +95,14 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
     })
 
     it("should update a task", async () => {
-        const gevCreateNewWorkspace = await request(app)
+        const gevCreateNewWorkspace = await request(testApp)
             .post("/api/workspaces/")
             .set('Authorization', `Bearer ${gevAccessToken}`)
             .send({
                 name: "My First Workspace created By Gevor",
             });
 
-        const gevCreatedTask = await request(app)
+        const gevCreatedTask = await request(testApp)
             .post("/api/tasks/")
             .set('Authorization', `Bearer ${gevAccessToken}`)
             .send({
@@ -110,7 +112,7 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
                 completed: false
             });
 
-        const gevUpdatedTask = await request(app)
+        const gevUpdatedTask = await request(testApp)
             .put(`/api/tasks/${gevCreatedTask.body.id}`)
             .set('Authorization', `Bearer ${gevAccessToken}`)
             .send({
@@ -125,14 +127,14 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
     })
 
     it("should forbid update a task", async () => {
-        const gevCreateNewWorkspace = await request(app)
+        const gevCreateNewWorkspace = await request(testApp)
             .post("/api/workspaces/")
             .set('Authorization', `Bearer ${gevAccessToken}`)
             .send({
                 name: "My First Workspace created By Gevor",
             });
 
-        const gevCreatedTask = await request(app)
+        const gevCreatedTask = await request(testApp)
             .post("/api/tasks/")
             .set('Authorization', `Bearer ${gevAccessToken}`)
             .send({
@@ -142,7 +144,7 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
                 completed: false
             });
 
-        const gevUpdatedTask = await request(app)
+        const gevUpdatedTask = await request(testApp)
             .put(`/api/tasks/${gevCreatedTask.body.id}`)
             .set('Authorization', `Bearer ${tigranAccessToken}`)
             .send({

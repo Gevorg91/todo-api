@@ -1,18 +1,20 @@
 const mongoose = require("mongoose");
 const request = require("supertest");
-const systemUnderTest = require('./testApp');
+const {appFactory} = require("../appFactory")
 const {MongoMemoryServer} = require("mongodb-memory-server");
 
 describe("End to End Integration Tests for Users flow ", () => {
 
     let mongoServer;
-    let app = systemUnderTest.app;
-    let server = systemUnderTest.server;
+    let testApp;
+    let testApiServer;
 
     beforeAll(async () => {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = await mongoServer.getUri();
-        await mongoose.connect(mongoUri);
+        const {app, server} = appFactory(mongoUri)
+        testApp = app;
+        testApiServer = server;
     });
 
     afterEach(async () => {
@@ -22,7 +24,7 @@ describe("End to End Integration Tests for Users flow ", () => {
     afterAll(async () => {
         await mongoServer.stop();
         await mongoose.disconnect();
-        server.close();
+        testApiServer.close();
     });
 
     it("should create new account by passing correct username and password", async () => {
@@ -32,7 +34,7 @@ describe("End to End Integration Tests for Users flow ", () => {
         const password = "Pass1234!";
 
         // Act
-        const res = await request(app).post("/api/users/register").send({
+        const res = await request(testApp).post("/api/users/register").send({
             username: username,
             password: password,
         });
@@ -45,13 +47,13 @@ describe("End to End Integration Tests for Users flow ", () => {
     it("should sign in when provided correct username and password", async () => {
 
         // Arrange
-        await request(app).post("/api/users/register").send({
+        await request(testApp).post("/api/users/register").send({
             username: "me@tigranes.io",
             password: "Pass1234!",
         });
 
         // Act
-        const signInResponse = await request(app).post("/api/users/login").send({
+        const signInResponse = await request(testApp).post("/api/users/login").send({
             username: "me@tigranes.io",
             password: "Pass1234!",
         });
@@ -67,13 +69,13 @@ describe("End to End Integration Tests for Users flow ", () => {
         const username = "me@tigranes.io";
         const password = "Pass1234!";
 
-        await request(app).post("/api/users/register").send({
+        await request(testApp).post("/api/users/register").send({
             username: username,
             password: password,
         });
 
         // Act
-        const res = await request(app).post("/api/users/register").send({
+        const res = await request(testApp).post("/api/users/register").send({
             username: username,
             password: password,
         });
@@ -85,13 +87,13 @@ describe("End to End Integration Tests for Users flow ", () => {
 
     it("should not sign in with an incorrect password", async () => {
         // Arrange
-        await request(app).post("/api/users/register").send({
+        await request(testApp).post("/api/users/register").send({
             username: "me@tigranes.io",
             password: "Pass1234!",
         });
 
         // Act
-        const signInResponse = await request(app).post("/api/users/login").send({
+        const signInResponse = await request(testApp).post("/api/users/login").send({
             username: "me@tigranes.io",
             password: "wrongpassword",
         });

@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 const config = require('config');
 
-const connectDB = async () => {
+const connectDB = async (dbUri) => {
     try {
-        await mongoose.connect(config.get('MONGO_URI'), {
+        await mongoose.connect(dbUri, {
             useUnifiedTopology: true
         });
         console.log(`MongoDB connected in ${config.get('NODE_ENV')} mode`);
