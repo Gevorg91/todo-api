@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const request = require("supertest");
-const systemUnderTest = require('../app');
+const systemUnderTest = require('./testApp');
 const {MongoMemoryServer} = require("mongodb-memory-server");
 
 describe("End to End Integration Tests For Tasks Flow ", () => {
