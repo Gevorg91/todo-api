@@ -8,8 +8,8 @@ const auth = require('./middleware/authMiddleware');
 const errorMiddleware = require('./middleware/errorMiddleware');
 const invalidSyntaxMiddleware = require('./middleware/invalidSyntaxMiddleware');
 
-const appFactory = (appStartupConfig) => {
-    connectDB(appStartupConfig.dbUri);
+const appFactory = async (appStartupConfig) => {
+    await connectDB(appStartupConfig.dbUri);
 
     const app = express();
     app.use(express.json());
