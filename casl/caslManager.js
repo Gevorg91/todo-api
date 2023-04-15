@@ -6,7 +6,7 @@ exports.createAbilitiesForUserPerWorkspace = async (user, workspaceId) => {
     const workspace = await Workspace.findOne({_id: workspaceId});
     const userInWorkspace = await workspace.members.find(member => member.user.toString() === user.id)
 
-    if (userInWorkspace) {
+    if (workspace && userInWorkspace) {
         if (Role.ADMIN === userInWorkspace.role) {
             can("manage", "Task")
             can("manage", "Workspace")
@@ -16,8 +16,6 @@ exports.createAbilitiesForUserPerWorkspace = async (user, workspaceId) => {
         } else if (Role.GUEST === userInWorkspace.role) {
             can(['read'], "Task");
         }
-    } else {
-        cannot(['read', 'create', 'update', 'delete'], 'Task');
     }
 
     return build();
