@@ -10,7 +10,13 @@ const memberSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-    }
+    },
+    role:
+        {
+            type: String,
+            enum: Object.values(Role),
+            default: Role.MEMBER
+        },
 });
 
 const workspaceSchema = new mongoose.Schema({

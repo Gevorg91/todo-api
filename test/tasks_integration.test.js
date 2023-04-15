@@ -68,6 +68,9 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
                 completed: false
             });
 
+        console.log(gevCreatedTask.body)
+
+
         expect(gevCreatedTask.header['content-type']).toBe('application/json; charset=utf-8');
         expect(gevCreatedTask.statusCode).toBe(201);
     })
