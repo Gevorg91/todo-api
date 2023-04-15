@@ -3,6 +3,7 @@ const {sendResponse} = require('../utils/responseHandler');
 const {StatusCodes} = require("../utils/statusCodes");
 const {validationResult} = require("express-validator");
 const taskService = require("../services/taskService")
+const {createAbilitiesForUserPerWorkspace} = require("../casl/caslManager");
 
 exports.createTask = async (req, res, next) => {
     const errors = validationResult(req);
@@ -12,15 +13,22 @@ exports.createTask = async (req, res, next) => {
 
     try {
         const {title, description, completed, workspace} = req.body;
+        const abilities = await createAbilitiesForUserPerWorkspace(req.user, workspace);
 
-        const taskData = {
-            title,
-            description,
-            completed,
-            workspace
-        };
-        const task = await taskService.createTask(req.user.id, taskData);
-        sendResponse(res, StatusCodes.CREATED, formatTaskResponse(task));
+        if (abilities.can("create", "Task")) {
+            const taskData = {
+                title,
+                description,
+                completed,
+                workspace
+            };
+            const task = await taskService.createTask(req.user.id, taskData);
+            sendResponse(res, StatusCodes.CREATED, formatTaskResponse(task));
+        } else  {
+            next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
+        }
+
+
     } catch (err) {
         next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
     }
@@ -73,22 +81,31 @@ exports.updateTask = async (req, res, next) => {
     }
 
     try {
+
         const {id} = req.params;
-        const {title, description, status} = req.body;
+        const {title, description, status, workspace} = req.body;
 
-        const taskData = {
-            title,
-            description,
-            status,
-        };
+        const abilities = await createAbilitiesForUserPerWorkspace(req.user, workspace);
 
-        const updatedTask = await taskService.updateTask(id,  taskData);
+        if (abilities.can("update", "Task")) {
+            const taskData = {
+                title,
+                description,
+                status,
+            };
 
-        if (!updatedTask) {
-            return next(errorFactory(StatusCodes.NOT_FOUND));
+            const updatedTask = await taskService.updateTask(id,  taskData);
+
+            if (!updatedTask) {
+                return next(errorFactory(StatusCodes.NOT_FOUND));
+            }
+
+            sendResponse(res, StatusCodes.OK, formatTaskResponse(updatedTask));
+        } else  {
+            next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
         }
 
-        sendResponse(res, StatusCodes.OK, formatTaskResponse(updatedTask));
+
     } catch (err) {
         next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
     }

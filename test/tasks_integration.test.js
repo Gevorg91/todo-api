@@ -48,7 +48,7 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
         testApiServer.close();
     });
 
-    it("should forbid update because the user is not in the workspace", async () => {
+    it("should create a new task", async () => {
         const gevCreateNewWorkspace = await request(app)
             .post("/api/workspaces/")
             .set('Authorization', `Bearer ${gevAccessToken}`)
@@ -66,8 +66,52 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
                 completed: false
             });
 
-        const gevCreatedTaskUpdated = await request(app)
+        expect(gevCreatedTask.header['content-type']).toBe('application/json; charset=utf-8');
+        expect(gevCreatedTask.statusCode).toBe(201);
+    })
+
+    it("should forbid a creation of a new task", async () => {
+        const gevCreateNewWorkspace = await request(app)
+            .post("/api/workspaces/")
+            .set('Authorization', `Bearer ${gevAccessToken}`)
+            .send({
+                name: "My First Workspace created By Gevor",
+            });
+
+        const gevCreatedTask = await request(app)
             .post("/api/tasks/")
+            .set('Authorization', `Bearer ${tigranAccessToken}`)
+            .send({
+                title: "Buy some staff",
+                description: "This is my first task",
+                workspace: gevCreateNewWorkspace.body.id,
+                completed: false
+            });
+
+        expect(gevCreatedTask.header['content-type']).toBe('application/json; charset=utf-8');
+        expect(gevCreatedTask.statusCode).toBe(416);
+    })
+
+    it("should update a task", async () => {
+        const gevCreateNewWorkspace = await request(app)
+            .post("/api/workspaces/")
+            .set('Authorization', `Bearer ${gevAccessToken}`)
+            .send({
+                name: "My First Workspace created By Gevor",
+            });
+
+        const gevCreatedTask = await request(app)
+            .post("/api/tasks/")
+            .set('Authorization', `Bearer ${gevAccessToken}`)
+            .send({
+                title: "Buy some staff",
+                description: "This is my first task",
+                workspace: gevCreateNewWorkspace.body.id,
+                completed: false
+            });
+
+        const gevUpdatedTask = await request(app)
+            .put(`/api/tasks/${gevCreatedTask.body.id}`)
             .set('Authorization', `Bearer ${gevAccessToken}`)
             .send({
                 title: "Buy some staff - UPDATED",
@@ -76,9 +120,30 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
                 completed: false
             });
 
-        // Act
-        const tigranUpdatesGevTask = await request(app)
+        expect(gevUpdatedTask.header['content-type']).toBe('application/json; charset=utf-8');
+        expect(gevUpdatedTask.statusCode).toBe(200);
+    })
+
+    it("should forbid update a task", async () => {
+        const gevCreateNewWorkspace = await request(app)
+            .post("/api/workspaces/")
+            .set('Authorization', `Bearer ${gevAccessToken}`)
+            .send({
+                name: "My First Workspace created By Gevor",
+            });
+
+        const gevCreatedTask = await request(app)
             .post("/api/tasks/")
+            .set('Authorization', `Bearer ${gevAccessToken}`)
+            .send({
+                title: "Buy some staff",
+                description: "This is my first task",
+                workspace: gevCreateNewWorkspace.body.id,
+                completed: false
+            });
+
+        const gevUpdatedTask = await request(app)
+            .put(`/api/tasks/${gevCreatedTask.body.id}`)
             .set('Authorization', `Bearer ${tigranAccessToken}`)
             .send({
                 title: "Buy some staff - UPDATED",
@@ -87,9 +152,7 @@ describe("End to End Integration Tests For Tasks Flow ", () => {
                 completed: false
             });
 
-        // Assert
-        expect(tigranUpdatesGevTask.header['content-type']).toBe('application/json; charset=utf-8');
-        expect(tigranUpdatesGevTask.statusCode).toBe(403);
+        expect(gevUpdatedTask.header['content-type']).toBe('application/json; charset=utf-8');
+        expect(gevUpdatedTask.statusCode).toBe(416);
     })
-
 });
