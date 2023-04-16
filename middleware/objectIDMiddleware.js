@@ -1,16 +1,15 @@
 const mongoose = require("mongoose");
-const {errorFactory} = require("../utils/errorHandler");
-const {StatusCodes} = require("../utils/statusCodes");
-
+const { errorFactory } = require("../utils/errorHandler");
+const { StatusCodes } = require("../utils/statusCodes");
 
 const validate = (req, res, next) => {
-    const {id} = req.params;
+  const { id } = req.params;
 
-    if (!mongoose.isValidObjectId(id)) {
-        return next(errorFactory(StatusCodes.NOT_FOUND));
-    }
+  if (!mongoose.isValidObjectId(id)) {
+    return next(errorFactory(StatusCodes.NOT_FOUND));
+  }
 
-    next();
+  next();
 };
 
 module.exports = validate;

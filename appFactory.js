@@ -1,5 +1,4 @@
 const express = require("express");
-const config = require("config");
 const connectDB = require("./config/dbConfig");
 const taskRoutes = require("./routes/taskRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -28,9 +27,7 @@ const appFactory = async (appStartupConfig) => {
   });
 
   const PORT = appStartupConfig.port;
-
   const server = app.listen(PORT);
-
   return { app, server };
 };
 
