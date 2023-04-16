@@ -97,8 +97,6 @@ exports.addMember = async (req, res, next) => {
     }
 };
 
-
-
 function formatTaskResponse(workspace) {
     return {
         id: workspace._id,

@@ -22,6 +22,7 @@ const StatusCodes = {
     CONFLICT: 409,
     GONE: 410,
     UNSUPPORTED_MEDIA_TYPE: 415,
+    ABILITIES_VALIDATION_ERROR: 416,
 
     // 5xx Server errors
     INTERNAL_SERVER_ERROR: 500,

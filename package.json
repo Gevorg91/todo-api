@@ -4,7 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "test": "jest --runInBand --detectOpenHandles --collectCoverage"
   },
   "author": "",
   "license": "ISC",
@@ -16,7 +17,7 @@
     "express": "^4.18.2",
     "express-validator": "^6.15.0",
     "jsonwebtoken": "^9.0.0",
-    "mongoose": "^7.0.1"
+    "mongoose": "^7.0.3"
   },
   "devDependencies": {
     "jest": "^29.5.0",
