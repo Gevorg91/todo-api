@@ -9,26 +9,26 @@ const invalidSyntaxMiddleware = require("./middleware/invalidSyntaxMiddleware");
 const http = require("http");
 const { Server } = require("socket.io");
 const SocketEvent = require("./socket/socket_event");
-const SocketManager = require("./socket/socket_manager");
 const cors = require("cors");
-const jwt = require("jsonwebtoken");
-const config = require("config");
-const User = require("./models/userModel");
-const { errorFactory } = require("./utils/errorHandler");
-const { StatusCodes } = require("./utils/statusCodes");
-const { emitEvent } = require("./socket/socket_manager");
+const { instrument } = require("@socket.io/admin-ui");
 
 const appFactory = async (appStartupConfig) => {
   await connectDB(appStartupConfig.dbUri);
-  // await dropDatabase();
 
   const app = express();
   const nodeServer = http.createServer(app);
 
   const io = new Server(nodeServer, {
     cors: {
-      methods: ["GET", "POST"],
+      origin: ["https://admin.socket.io", "http://localhost:50455"],
+      methods: "*",
+      credentials: true,
     },
+  });
+
+  instrument(io, {
+    mode: "development",
+    auth: false,
   });
 
   app.use(
