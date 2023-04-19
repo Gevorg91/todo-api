@@ -1,10 +1,13 @@
 const { Workspace, Role } = require("../models/workspaceModel");
+const SocketManager = require("../socket/socket_manager");
 
 exports.createWorkspace = async (userid, data) => {
   const { name } = data;
   const workspace = new Workspace({ name, owner: userid });
   workspace.members.push({ user: userid, role: Role.ADMIN });
   await workspace.save();
+  // const manager = new SocketManager();
+  // await manager.joinToRoom(workspace._id);
   return workspace;
 };
 
