@@ -41,8 +41,8 @@ const appFactory = async (appStartupConfig) => {
 
   app.use(express.json());
   app.use(invalidSyntaxMiddleware);
-  app.use("/api/tasks", auth, taskRoutes);
   app.use("/api/users", userRoutes);
+  app.use("/api/tasks", auth, taskRoutes);
   app.use("/api/workspaces", auth, workspaceRoutes);
   app.use(errorMiddleware);
 
