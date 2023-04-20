@@ -14,6 +14,12 @@ const { instrument } = require("@socket.io/admin-ui");
 const jwt = require("jsonwebtoken");
 const config = require("config");
 const User = require("./models/userModel");
+const {
+  joinToRoom,
+  emitEventToRoom,
+  broadcastEventToRoom,
+  getSocketsInRoom,
+} = require("./socket/socket_manager");
 
 const appFactory = async (appStartupConfig) => {
   await connectDB(appStartupConfig.dbUri);
@@ -41,20 +47,13 @@ const appFactory = async (appStartupConfig) => {
       credentials: true,
     })
   );
+
   app.use(express.json());
   app.use(invalidSyntaxMiddleware);
   app.use("/api/tasks", auth, taskRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/workspaces", auth, workspaceRoutes);
   app.use(errorMiddleware);
-
-  process.on("unhandledRejection", (reason, promise) => {
-    console.error("Unhandled Rejection at:", promise, "reason:", reason);
-  });
-
-  process.on("uncaughtException", (error) => {
-    console.error("Uncaught Exception:", error);
-  });
 
   io.use(async (socket, next) => {
     const { token } = socket.handshake.auth;
@@ -69,6 +68,38 @@ const appFactory = async (appStartupConfig) => {
     console.log(
       `Socket connection was established for the client: ${socket.id}`
     );
+
+    socket.on("joinRoom", async (roomId) => {
+      await joinToRoom(socket, roomId);
+    });
+
+    socket.on("emitToRoom", async ({ roomId, eventType, eventData }) => {
+      await emitEventToRoom(socket, roomId, eventType, eventData);
+    });
+
+    socket.on("broadcastToRoom", async ({ roomId, eventType, eventData }) => {
+      await broadcastEventToRoom(socket, roomId, eventType, eventData);
+    });
+
+    socket.on("getSocketsInRoom", async ({ roomId }) => {
+      await getSocketsInRoom(io, roomId);
+    });
+
+    socket.on("getRoomsForSocket", async () => {
+      await getSocketsInRoom(socket);
+    });
+
+    socket.on("disconnect", () => {
+      console.log(`Socket ${socket.id} disconnected`);
+    });
+  });
+
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  });
+
+  process.on("uncaughtException", (error) => {
+    console.error("Uncaught Exception:", error);
   });
 
   const PORT = appStartupConfig.port;
