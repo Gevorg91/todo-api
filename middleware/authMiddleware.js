@@ -7,8 +7,6 @@ const { StatusCodes } = require("../utils/statusCodes");
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.header("Authorization").replace("Bearer ", "");
-    console.log(`Token is: ${token}`);
-    console.log(`Secret ia: ${config.get("JWT_SECRET")}`);
     const decoded = jwt.verify(token, config.get("JWT_SECRET"));
     const user = await User.findById(decoded.user.id);
 

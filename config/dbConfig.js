@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const config = require("config");
 
 exports.connectDB = async (dbUri) => {
   try {
@@ -12,7 +11,7 @@ exports.connectDB = async (dbUri) => {
   }
 };
 
-exports.dropDatabase = async (dbUri) => {
+exports.dropDatabase = async () => {
   mongoose.connection
     .dropDatabase()
     .then(() => console.log("Database dropped."))

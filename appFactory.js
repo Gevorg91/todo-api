@@ -11,6 +11,9 @@ const { Server } = require("socket.io");
 const SocketEvent = require("./socket/socket_event");
 const cors = require("cors");
 const { instrument } = require("@socket.io/admin-ui");
+const jwt = require("jsonwebtoken");
+const config = require("config");
+const User = require("./models/userModel");
 
 const appFactory = async (appStartupConfig) => {
   await connectDB(appStartupConfig.dbUri);
@@ -20,7 +23,7 @@ const appFactory = async (appStartupConfig) => {
 
   const io = new Server(nodeServer, {
     cors: {
-      origin: ["https://admin.socket.io", "http://localhost:50455"],
+      origin: ["https://admin.socket.io", "http://localhost:58389"],
       methods: "*",
       credentials: true,
     },
@@ -55,7 +58,10 @@ const appFactory = async (appStartupConfig) => {
 
   io.use(async (socket, next) => {
     const { token } = socket.handshake.auth;
-    socket.token = token;
+    const decoded = jwt.verify(token, config.get("JWT_SECRET"));
+    const user = await User.findById(decoded.user.id);
+    socket.user = user;
+    console.log(`Socket connected with User: ${user}`);
     next();
   });
 
