@@ -13,6 +13,7 @@ const { instrument } = require("@socket.io/admin-ui");
 const { joinToRoom } = require("./socket/socket_manager");
 const { initializeSocketConnection } = require("./socket/socket_io_instance");
 const socketAuthMiddleware = require("./middleware/socket_auth_middleware");
+const { Workspace } = require("./models/workspaceModel");
 
 const appFactory = async (appStartupConfig) => {
   await connectDB(appStartupConfig.dbUri);
@@ -21,7 +22,7 @@ const appFactory = async (appStartupConfig) => {
   const nodeServer = http.createServer(app);
 
   const io = initializeSocketConnection(nodeServer, {
-    origin: ["https://admin.socket.io", "http://localhost:58389"],
+    origin: ["https://admin.socket.io", "http://localhost:51063"],
     methods: "*",
     credentials: true,
   });
@@ -48,10 +49,18 @@ const appFactory = async (appStartupConfig) => {
 
   io.use(socketAuthMiddleware);
 
-  io.on(SocketEvent.CONNECTION, (socket) => {
+  io.on(SocketEvent.CONNECTION, async (socket) => {
     console.log(
-      `Socket connection was established for the client: ${socket.id}`
+      `Socket connection was established for the client: ${socket.user.username}`
     );
+
+    const workspaces = await Workspace.find({ owner: socket.user.id });
+
+    for (const workspace of workspaces) {
+      const roomId = workspace._id;
+      await joinToRoom(socket, roomId);
+      console.log(`The user ${socket.user.id} joined ${workspace.name} room!`);
+    }
 
     socket.on(SocketEvent.JOIN_TO_ROOM, async (roomId) => {
       await joinToRoom(socket, roomId);

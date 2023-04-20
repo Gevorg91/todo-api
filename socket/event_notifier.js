@@ -1,6 +1,5 @@
 const ioInstance =
   require("../socket/socket_io_instance").getServerIoInstance();
-const Event = require("./event");
 
 exports.sendTaskEvent = async (event, task) => {
   const roomId = task.workspace;
