@@ -11,7 +11,7 @@ const SocketEvent = require("./socket/socket_event");
 const cors = require("cors");
 const { instrument } = require("@socket.io/admin-ui");
 const { joinToRoom } = require("./socket/socket_manager");
-const { initializeSocketServer } = require("./socket/socket_io_instance");
+const { initializeSocketConnection } = require("./socket/socket_io_instance");
 const socketAuthMiddleware = require("./middleware/socket_auth_middleware");
 
 const appFactory = async (appStartupConfig) => {
@@ -20,7 +20,7 @@ const appFactory = async (appStartupConfig) => {
   const app = express();
   const nodeServer = http.createServer(app);
 
-  const io = initializeSocketServer(nodeServer, {
+  const io = initializeSocketConnection(nodeServer, {
     origin: ["https://admin.socket.io", "http://localhost:58389"],
     methods: "*",
     credentials: true,

@@ -2,7 +2,7 @@ const { Server } = require("socket.io");
 
 let serverIo;
 
-exports.initializeSocketServer = (server, cors) => {
+exports.initializeSocketConnection = (server, cors) => {
   serverIo = new Server(server, {
     cors: cors,
   });
