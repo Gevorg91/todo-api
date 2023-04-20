@@ -14,12 +14,7 @@ const { instrument } = require("@socket.io/admin-ui");
 const jwt = require("jsonwebtoken");
 const config = require("config");
 const User = require("./models/userModel");
-const {
-  joinToRoom,
-  emitEventToRoom,
-  broadcastEventToRoom,
-  getSocketsInRoom,
-} = require("./socket/socket_manager");
+const { joinToRoom, broadcastEventToRoom } = require("./socket/socket_manager");
 
 const appFactory = async (appStartupConfig) => {
   await connectDB(appStartupConfig.dbUri);
@@ -69,19 +64,12 @@ const appFactory = async (appStartupConfig) => {
       `Socket connection was established for the client: ${socket.id}`
     );
 
-    socket.on(SocketEvent.JOIN_TO_ROOM, async (roomId) => {
+    socket.on(SocketEvent.JOIN_TO_WORKSPACE, async (roomId) => {
       await joinToRoom(socket, roomId);
     });
 
     socket.on(
-      SocketEvent.EMIT_TO_ROOM,
-      async ({ roomId, eventType, eventData }) => {
-        await emitEventToRoom(socket, roomId, eventType, eventData);
-      }
-    );
-
-    socket.on(
-      SocketEvent.BROADCAST_TO_ROOM,
+      SocketEvent.BROADCAST_TO_WORKSPACE,
       async ({ roomId, eventType, eventData }) => {
         await broadcastEventToRoom(socket, roomId, eventType, eventData);
       }
@@ -102,7 +90,7 @@ const appFactory = async (appStartupConfig) => {
 
   const PORT = appStartupConfig.port;
   const server = nodeServer.listen(PORT);
-  return { app, server };
+  return { app, server, io };
 };
 
 module.exports = { appFactory };

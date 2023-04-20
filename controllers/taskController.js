@@ -4,6 +4,9 @@ const { StatusCodes } = require("../utils/statusCodes");
 const { validationResult } = require("express-validator");
 const taskService = require("../services/taskService");
 const { createAbilitiesForUserPerWorkspace } = require("../casl/caslManager");
+const { io } = require("../appFactory");
+const { emitEventToRoom } = require("../socket/socket_manager");
+const WorkspaceEvent = require("../socket/workspace_event");
 
 exports.createTask = async (req, res, next) => {
   const errors = validationResult(req);
@@ -29,6 +32,12 @@ exports.createTask = async (req, res, next) => {
       };
       const task = await taskService.createTask(req.user.id, taskData);
       sendResponse(res, StatusCodes.CREATED, formatTaskResponse(task));
+      await io
+        .to(workspace)
+        .broadcast({
+          type: WorkspaceEvent.TASK_CREATED,
+          task: formatTaskResponse(task),
+        });
     } else {
       next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
     }
