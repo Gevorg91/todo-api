@@ -18,7 +18,6 @@ exports.createWorkspace = async (req, res, next) => {
     const workspace = await workspaceService.createWorkspace(req.user.id, data);
     sendResponse(res, StatusCodes.CREATED, formatTaskResponse(workspace));
   } catch (err) {
-    console.log(err);
     next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
   }
 };

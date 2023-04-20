@@ -7,14 +7,12 @@ const auth = require("./middleware/authMiddleware");
 const errorMiddleware = require("./middleware/errorMiddleware");
 const invalidSyntaxMiddleware = require("./middleware/invalidSyntaxMiddleware");
 const http = require("http");
-const { Server } = require("socket.io");
 const SocketEvent = require("./socket/socket_event");
 const cors = require("cors");
 const { instrument } = require("@socket.io/admin-ui");
-const jwt = require("jsonwebtoken");
-const config = require("config");
-const User = require("./models/userModel");
-const { joinToRoom, broadcastEventToRoom } = require("./socket/socket_manager");
+const { joinToRoom } = require("./socket/socket_manager");
+const { initializeSocketServer } = require("./socket/socket_io_instance");
+const socketAuthMiddleware = require("./middleware/socket_auth_middleware");
 
 const appFactory = async (appStartupConfig) => {
   await connectDB(appStartupConfig.dbUri);
@@ -22,12 +20,10 @@ const appFactory = async (appStartupConfig) => {
   const app = express();
   const nodeServer = http.createServer(app);
 
-  const io = new Server(nodeServer, {
-    cors: {
-      origin: ["https://admin.socket.io", "http://localhost:58389"],
-      methods: "*",
-      credentials: true,
-    },
+  const io = initializeSocketServer(nodeServer, {
+    origin: ["https://admin.socket.io", "http://localhost:58389"],
+    methods: "*",
+    credentials: true,
   });
 
   instrument(io, {
@@ -50,32 +46,18 @@ const appFactory = async (appStartupConfig) => {
   app.use("/api/workspaces", auth, workspaceRoutes);
   app.use(errorMiddleware);
 
-  io.use(async (socket, next) => {
-    const { token } = socket.handshake.auth;
-    const decoded = jwt.verify(token, config.get("JWT_SECRET"));
-    const user = await User.findById(decoded.user.id);
-    socket.user = user;
-    console.log(`Socket connected with User: ${user}`);
-    next();
-  });
+  io.use(socketAuthMiddleware);
 
   io.on(SocketEvent.CONNECTION, (socket) => {
     console.log(
       `Socket connection was established for the client: ${socket.id}`
     );
 
-    socket.on(SocketEvent.JOIN_TO_WORKSPACE, async (roomId) => {
+    socket.on(SocketEvent.JOIN_TO_ROOM, async (roomId) => {
       await joinToRoom(socket, roomId);
     });
 
-    socket.on(
-      SocketEvent.BROADCAST_TO_WORKSPACE,
-      async ({ roomId, eventType, eventData }) => {
-        await broadcastEventToRoom(socket, roomId, eventType, eventData);
-      }
-    );
-
-    socket.on("disconnect", () => {
+    socket.on(SocketEvent.DISCONNECT, () => {
       console.log(`Socket ${socket.id} disconnected`);
     });
   });
@@ -90,7 +72,7 @@ const appFactory = async (appStartupConfig) => {
 
   const PORT = appStartupConfig.port;
   const server = nodeServer.listen(PORT);
-  return { app, server, io };
+  return { app, server };
 };
 
 module.exports = { appFactory };

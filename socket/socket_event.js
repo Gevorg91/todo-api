@@ -1,7 +1,7 @@
 const SocketEvent = {
   CONNECTION: "connection",
-  JOIN_TO_WORKSPACE: "join_to_workspace",
-  BROADCAST_TO_WORKSPACE: "broadcast_to_workspace",
+  JOIN_TO_ROOM: "join_to_room",
+  DISCONNECT: "disconnect",
 };
 
 Object.freeze(SocketEvent);
