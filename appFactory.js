@@ -69,25 +69,23 @@ const appFactory = async (appStartupConfig) => {
       `Socket connection was established for the client: ${socket.id}`
     );
 
-    socket.on("joinRoom", async (roomId) => {
+    socket.on(SocketEvent.JOIN_TO_ROOM, async (roomId) => {
       await joinToRoom(socket, roomId);
     });
 
-    socket.on("emitToRoom", async ({ roomId, eventType, eventData }) => {
-      await emitEventToRoom(socket, roomId, eventType, eventData);
-    });
+    socket.on(
+      SocketEvent.EMIT_TO_ROOM,
+      async ({ roomId, eventType, eventData }) => {
+        await emitEventToRoom(socket, roomId, eventType, eventData);
+      }
+    );
 
-    socket.on("broadcastToRoom", async ({ roomId, eventType, eventData }) => {
-      await broadcastEventToRoom(socket, roomId, eventType, eventData);
-    });
-
-    socket.on("getSocketsInRoom", async ({ roomId }) => {
-      await getSocketsInRoom(io, roomId);
-    });
-
-    socket.on("getRoomsForSocket", async () => {
-      await getSocketsInRoom(socket);
-    });
+    socket.on(
+      SocketEvent.BROADCAST_TO_ROOM,
+      async ({ roomId, eventType, eventData }) => {
+        await broadcastEventToRoom(socket, roomId, eventType, eventData);
+      }
+    );
 
     socket.on("disconnect", () => {
       console.log(`Socket ${socket.id} disconnected`);

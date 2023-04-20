@@ -1,8 +1,10 @@
 const SocketEvent = {
   CONNECTION: "connection",
-  SEND_MESSAGE: "sendMessage",
+  JOIN_TO_ROOM: "join_to_room",
+  EMIT_TO_ROOM: "emit_to_room",
+  BROADCAST_TO_ROOM: "broadcast_to_room",
 };
 
-Object.freeze(SocketEvent); // Make the object immutable
+Object.freeze(SocketEvent);
 
 module.exports = SocketEvent;
