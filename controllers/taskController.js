@@ -3,12 +3,14 @@ const { sendResponse } = require("../utils/responseHandler");
 const { StatusCodes } = require("../utils/statusCodes");
 const { validationResult } = require("express-validator");
 const taskService = require("../services/taskService");
+const { Event } = require("../socket/event");
 const { createAbilitiesForUserPerWorkspace } = require("../casl/caslManager");
 
 const {
   sendTaskCreatedEvent,
   sendTaskUpdatedEvent,
   sendTaskDeletedEvent,
+  sendTaskEvent,
 } = require("../socket/event_notifier");
 
 exports.createTask = async (req, res, next) => {
@@ -35,7 +37,7 @@ exports.createTask = async (req, res, next) => {
       };
       const task = await taskService.createTask(req.user.id, taskData);
       sendResponse(res, StatusCodes.CREATED, formatTaskResponse(task));
-      await sendTaskCreatedEvent(formatTaskResponse(task));
+      await sendTaskEvent(Event.TASK_CREATED, formatTaskResponse(task));
     } else {
       next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
     }
@@ -115,7 +117,7 @@ exports.updateTask = async (req, res, next) => {
       }
 
       sendResponse(res, StatusCodes.OK, formatTaskResponse(updatedTask));
-      await sendTaskUpdatedEvent(formatTaskResponse(updatedTask));
+      await sendTaskEvent(Event.TASK_UPDATED, formatTaskResponse(updatedTask));
     } else {
       next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
     }
@@ -134,6 +136,8 @@ exports.deleteTask = async (req, res, next) => {
 
     sendResponse(res, StatusCodes.OK);
     await sendTaskDeletedEvent(id);
+    // TODO: We need to get an info about current workspace
+    await sendTaskEvent(Event.TASK_DELETED, undefined);
   } catch (err) {
     next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
   }
