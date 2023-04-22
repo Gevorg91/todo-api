@@ -3,6 +3,7 @@ const { errorFactory } = require("../utils/errorHandler");
 const { StatusCodes } = require("../utils/statusCodes");
 const { sendResponse } = require("../utils/responseHandler");
 const workspaceService = require("../services/workspaceService");
+const { joinToRoom } = require("../socket/socket_manager");
 
 exports.createWorkspace = async (req, res, next) => {
   const errors = validationResult(req);
@@ -17,7 +18,15 @@ exports.createWorkspace = async (req, res, next) => {
     const data = { name };
     const workspace = await workspaceService.createWorkspace(req.user.id, data);
     sendResponse(res, StatusCodes.CREATED, formatTaskResponse(workspace));
+    if (req.user.socketId) {
+      const ioInstance =
+        await require("../socket/socket_io_instance").getServerIoInstance();
+      const allConnectedSockets = await ioInstance.sockets.sockets;
+      const socket = allConnectedSockets.get(req.user.socketId);
+      await joinToRoom(socket, workspace._id);
+    }
   } catch (err) {
+    console.log(err);
     next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
   }
 };

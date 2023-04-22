@@ -10,6 +10,10 @@ const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, config.get("JWT_SECRET"));
     const user = await User.findById(decoded.user.id);
 
+    const socketId = req.header("socket");
+    if (socketId) {
+      user.socketId = socketId;
+    }
     if (!user) {
       return next(errorFactory(StatusCodes.NOT_FOUND));
     }

@@ -22,7 +22,7 @@ const appFactory = async (appStartupConfig) => {
   const nodeServer = http.createServer(app);
 
   const io = initializeSocketConnection(nodeServer, {
-    origin: ["https://admin.socket.io", "http://localhost:51063"],
+    origin: ["https://admin.socket.io", "http://localhost:49945"],
     methods: "*",
     credentials: true,
   });
@@ -59,11 +59,11 @@ const appFactory = async (appStartupConfig) => {
     for (const workspace of workspaces) {
       const roomId = workspace._id;
       await joinToRoom(socket, roomId);
-      console.log(`The user ${socket.user.id} joined ${workspace.name} room!`);
     }
 
     socket.on(SocketEvent.JOIN_TO_ROOM, async (roomId) => {
-      await joinToRoom(socket, roomId);
+      const message = JSON.parse(roomId);
+      await joinToRoom(socket, message.roomId);
     });
 
     socket.on(SocketEvent.DISCONNECT, () => {
