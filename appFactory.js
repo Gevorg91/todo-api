@@ -22,7 +22,7 @@ const appFactory = async (appStartupConfig) => {
   const nodeServer = http.createServer(app);
 
   const io = initializeSocketConnection(nodeServer, {
-    origin: ["https://admin.socket.io", "http://localhost:49945"],
+    origin: "*",
     methods: "*",
     credentials: true,
   });
