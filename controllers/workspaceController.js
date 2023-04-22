@@ -19,6 +19,7 @@ exports.createWorkspace = async (req, res, next) => {
     const workspace = await workspaceService.createWorkspace(req.user.id, data);
     sendResponse(res, StatusCodes.CREATED, formatTaskResponse(workspace));
     if (req.user.socketId) {
+      // TODO: Fix this
       const ioInstance =
         await require("../socket/socket_io_instance").getServerIoInstance();
       const allConnectedSockets = await ioInstance.sockets.sockets;
