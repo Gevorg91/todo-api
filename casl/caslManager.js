@@ -14,8 +14,7 @@ exports.createAbilitiesForUserPerWorkspace = async (user, workspaceId) => {
       can("manage", "Workspace");
       break;
     case Role.MEMBER:
-      can(["read", "create"], "Task");
-      can(["update", "delete"], "Task", { user: userInWorkspace.id });
+      can("manage", "Task");
       break;
     case Role.GUEST:
       can(["read"], "Task");

@@ -22,17 +22,16 @@ const setupBeforeAll = async () => {
   );
   testApp = app;
   testApiServer = server;
-};
 
-const setupBeforeEach = async () => {
   users.user1 = await createUser("user1", "Pass1234");
   users.user2 = await createUser("user2", "Pass1234");
   users.user3 = await createUser("user3", "Pass1234");
+  users.user4 = await createUser("user4", "Pass1234");
 };
 
-const setupAfterEach = async () => {
-  await mongoose.connection.dropDatabase();
-};
+const setupBeforeEach = async () => {};
+
+const setupAfterEach = async () => {};
 
 const setupAfterAll = async () => {
   await mongoServer.stop();

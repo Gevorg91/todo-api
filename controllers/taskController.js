@@ -47,31 +47,27 @@ exports.getTasks = async (req, res, next) => {
   }
 };
 
-exports.getTask = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const task = await taskService.getTaskById(id);
-
-    if (!task) {
-      return next(errorFactory(StatusCodes.NOT_FOUND));
-    }
-
-    sendResponse(res, StatusCodes.OK, formatTaskResponse(task));
-  } catch (err) {
-    next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
-  }
-};
-
 exports.getTaskById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const task = await taskService.getTaskById(id);
+    const workspaceId = await taskService.getWorkspaceByTaskId(id);
 
-    if (!task) {
-      return next(errorFactory(StatusCodes.NOT_FOUND));
+    const abilities = await createAbilitiesForUserPerWorkspace(
+      req.user,
+      workspaceId
+    );
+
+    if (abilities.can("read", "Task")) {
+      const task = await taskService.getTaskById(id);
+
+      if (!task) {
+        return next(errorFactory(StatusCodes.NOT_FOUND));
+      }
+
+      sendResponse(res, StatusCodes.OK, formatTaskResponse(task));
+    } else {
+      next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
     }
-
-    sendResponse(res, StatusCodes.OK, formatTaskResponse(task));
   } catch (err) {
     next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
   }
@@ -87,11 +83,12 @@ exports.updateTask = async (req, res, next) => {
 
   try {
     const { id } = req.params;
-    const { title, description, status, workspace } = req.body;
+    const { title, description, status } = req.body;
+    const workspaceId = await taskService.getWorkspaceByTaskId(id);
 
     const abilities = await createAbilitiesForUserPerWorkspace(
       req.user,
-      workspace
+      workspaceId
     );
 
     if (abilities.can("update", "Task")) {
@@ -119,12 +116,25 @@ exports.updateTask = async (req, res, next) => {
 exports.deleteTask = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const isDeleted = await taskService.deleteTask(id);
-    if (!isDeleted) {
-      return next(errorFactory(StatusCodes.NOT_FOUND));
-    }
+    const workspaceId = await taskService.getWorkspaceByTaskId(id);
 
-    sendResponse(res, StatusCodes.OK);
+    const abilities = await createAbilitiesForUserPerWorkspace(
+      req.user,
+      workspaceId
+    );
+
+    if (abilities.can("delete", "Task")) {
+      const { id } = req.params;
+      const isDeleted = await taskService.deleteTask(id);
+
+      if (!isDeleted) {
+        return next(errorFactory(StatusCodes.NOT_FOUND));
+      }
+
+      sendResponse(res, StatusCodes.OK);
+    } else {
+      next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
+    }
   } catch (err) {
     next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
   }

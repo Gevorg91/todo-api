@@ -8,7 +8,7 @@ router.post("/", taskValidator.validateTaskCreate, taskController.createTask);
 
 router.get("/", taskController.getTasks);
 
-router.get("/:id", objectIdValidator, taskController.getTask);
+router.get("/:id", objectIdValidator, taskController.getTaskById);
 
 router.put(
   "/:id",
