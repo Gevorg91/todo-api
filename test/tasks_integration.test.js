@@ -9,6 +9,9 @@ const {
 
 let testApp;
 let users = {};
+let workspace;
+let member;
+let guest;
 
 describe("Tasks Flow tests", () => {
   beforeAll(async () => {
@@ -22,6 +25,33 @@ describe("Tasks Flow tests", () => {
     users.user2 = await createUser("user2", "Pass1234");
     users.user3 = await createUser("user3", "Pass1234");
     users.user4 = await createUser("user4", "Pass1234");
+
+    workspace = await request(testApp)
+      .post("/api/workspaces")
+      .set("Authorization", `Bearer ${users.user1.token}`)
+      .send({
+        name: "Workspace",
+      });
+
+    member = await request(testApp)
+      .post(`/api/workspaces/${workspace.body.id}/members`)
+      .set("Authorization", `Bearer ${users.user1.token}`)
+      .send({
+        member: {
+          user: users.user2.id,
+          role: "member",
+        },
+      });
+
+    guest = await request(testApp)
+      .post(`/api/workspaces/${workspace.body.id}/members`)
+      .set("Authorization", `Bearer ${users.user1.token}`)
+      .send({
+        member: {
+          user: users.user3.id,
+          role: "guest",
+        },
+      });
   });
 
   afterEach(async () => {
@@ -33,58 +63,365 @@ describe("Tasks Flow tests", () => {
     await setupAfterAll();
   });
 
-  describe("Task CRUD as admin", () => {
-    let workspace;
-    let adminTask;
-    let memberTask;
+  // ADMIN
+  it("should create task as a admin", async () => {
+    const createTaskResponse = await createTask(
+      users.user1.token,
+      "admin task",
+      workspace.body.id
+    );
+    expect(createTaskResponse.statusCode).toBe(201);
+  });
 
-    it("Should create workspace", async () => {
-      workspace = await request(testApp)
-        .post("/api/workspaces")
-        .set("Authorization", `Bearer ${users.user1.token}`)
-        .send({
-          name: "Workspace",
-        });
-    });
+  it("should get own task as a admin", async () => {
+    const createTaskResponse = await createTask(
+      users.user1.token,
+      "admin task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+    const getTaskResponse = await getTaskById(
+      users.user1.token,
+      createResponseBody.id
+    );
+    expect(getTaskResponse.statusCode).toBe(200);
+  });
 
-    it("Should add members", async () => {
-      const member = await request(testApp)
-        .post(`/api/workspaces/${workspace.body.id}/members`)
-        .set("Authorization", `Bearer ${users.user1.token}`)
-        .send({
-          member: {
-            user: users.user2.id,
-            role: "member",
-          },
-        });
-    });
+  it("should get member task as a admin", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "member task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
 
-    it("Should create tasks", async () => {
-      adminTask = await request(testApp)
-        .post("/api/tasks")
-        .set("Authorization", `Bearer ${users.user1.token}`)
-        .send({
-          title: "admin- task 1",
-          description: "description",
-          completed: true,
-          workspace: workspace.body.id,
-        });
+    const getTaskResponse = await getTaskById(
+      users.user1.token,
+      createResponseBody.id
+    );
+    expect(getTaskResponse.statusCode).toBe(200);
+  });
 
-      memberTask = await request(testApp)
-        .post("/api/tasks")
-        .set("Authorization", `Bearer ${users.user2.token}`)
-        .send({
-          title: "member- task 1",
-          description: "description",
-          completed: true,
-          workspace: workspace.body.id,
-        });
+  it("should edit own task as a admin", async () => {
+    const createTaskResponse = await createTask(
+      users.user1.token,
+      "admin task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
 
-      expect(adminTask.statusCode).toBe(201);
-      expect(memberTask.statusCode).toBe(201);
-    });
+    const updateTaskRequest = await editTask(
+      users.user1.token,
+      "admin task updated",
+      createResponseBody.id
+    );
+
+    expect(updateTaskRequest.statusCode).toBe(200);
+  });
+
+  it("should edit member task as a admin", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "member task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const updateTaskRequest = await editTask(
+      users.user1.token,
+      "member task updated",
+      createResponseBody.id
+    );
+
+    expect(updateTaskRequest.statusCode).toBe(200);
+  });
+
+  it("should delete own task as a admin", async () => {
+    const createTaskResponse = await createTask(
+      users.user1.token,
+      "admin task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const deleteTaskRequest = await deleteTask(
+      users.user1.token,
+      createResponseBody.id
+    );
+
+    expect(deleteTaskRequest.statusCode).toBe(200);
+  });
+
+  it("should delete member task as a admin", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "member task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const deleteTaskRequest = await deleteTask(
+      users.user1.token,
+      createResponseBody.id
+    );
+
+    expect(deleteTaskRequest.statusCode).toBe(200);
+  });
+
+  // MEMBER
+  it("should create task as a member", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "admin task",
+      workspace.body.id
+    );
+    expect(createTaskResponse.statusCode).toBe(201);
+  });
+
+  it("should get own task as a member", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "member task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+    const getTaskResponse = await getTaskById(
+      users.user2.token,
+      createResponseBody.id
+    );
+    expect(getTaskResponse.statusCode).toBe(200);
+  });
+
+  it("should get admin task as a member", async () => {
+    const createTaskResponse = await createTask(
+      users.user1.token,
+      "admin task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const getTaskResponse = await getTaskById(
+      users.user2.token,
+      createResponseBody.id
+    );
+    expect(getTaskResponse.statusCode).toBe(200);
+  });
+
+  it("should edit own task as a member", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "member task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const updateTaskRequest = await editTask(
+      users.user2.token,
+      "member task updated",
+      createResponseBody.id
+    );
+
+    expect(updateTaskRequest.statusCode).toBe(200);
+  });
+
+  it("should edit admin task as a member", async () => {
+    const createTaskResponse = await createTask(
+      users.user1.token,
+      "admin task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const updateTaskRequest = await editTask(
+      users.user2.token,
+      "admin task updated",
+      createResponseBody.id
+    );
+
+    expect(updateTaskRequest.statusCode).toBe(200);
+  });
+
+  it("should delete own task as a member", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "member task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const deleteTaskRequest = await deleteTask(
+      users.user2.token,
+      createResponseBody.id
+    );
+
+    expect(deleteTaskRequest.statusCode).toBe(200);
+  });
+
+  it("should delete admin task as a member", async () => {
+    const createTaskResponse = await createTask(
+      users.user1.token,
+      "admin task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const deleteTaskRequest = await deleteTask(
+      users.user2.token,
+      createResponseBody.id
+    );
+
+    expect(deleteTaskRequest.statusCode).toBe(200);
+  });
+
+  // GUEST
+  it("should not create task as a guest", async () => {
+    const createTaskResponse = await createTask(
+      users.user3.token,
+      "admin task",
+      workspace.body.id
+    );
+    expect(createTaskResponse.statusCode).toBe(416);
+  });
+
+  it("should get task as a guest", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "member task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+    const getTaskResponse = await getTaskById(
+      users.user3.token,
+      createResponseBody.id
+    );
+    expect(getTaskResponse.statusCode).toBe(200);
+  });
+
+  it("should not edit task as a guest", async () => {
+    const createTaskResponse = await createTask(
+      users.user1.token,
+      "admin task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const updateTaskRequest = await editTask(
+      users.user3.token,
+      "admin task updated",
+      createResponseBody.id
+    );
+
+    expect(updateTaskRequest.statusCode).toBe(416);
+  });
+
+  it("should not delete task as a guest", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "member task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const deleteTaskRequest = await deleteTask(
+      users.user3.token,
+      createResponseBody.id
+    );
+
+    expect(deleteTaskRequest.statusCode).toBe(416);
+  });
+
+  // NOT WORKSPACE MEMBER
+  it("should not create task as a guest", async () => {
+    const createTaskResponse = await createTask(
+      users.user4.token,
+      "admin task",
+      workspace.body.id
+    );
+    expect(createTaskResponse.statusCode).toBe(416);
+  });
+
+  it("should get task as a guest", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "member task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+    const getTaskResponse = await getTaskById(
+      users.user4.token,
+      createResponseBody.id
+    );
+    expect(getTaskResponse.statusCode).toBe(416);
+  });
+
+  it("should not edit task as a guest", async () => {
+    const createTaskResponse = await createTask(
+      users.user1.token,
+      "admin task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const updateTaskRequest = await editTask(
+      users.user4.token,
+      "admin task updated",
+      createResponseBody.id
+    );
+
+    expect(updateTaskRequest.statusCode).toBe(416);
+  });
+
+  it("should not delete task as a guest", async () => {
+    const createTaskResponse = await createTask(
+      users.user2.token,
+      "member task",
+      workspace.body.id
+    );
+    const createResponseBody = JSON.parse(createTaskResponse.text);
+
+    const deleteTaskRequest = await deleteTask(
+      users.user4.token,
+      createResponseBody.id
+    );
+
+    expect(deleteTaskRequest.statusCode).toBe(416);
   });
 });
+
+const createTask = async (token, title, workspaceId) => {
+  return await request(testApp)
+    .post("/api/tasks")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      title: title,
+      description: "description",
+      completed: true,
+      workspace: workspaceId,
+    });
+};
+
+const getTaskById = async (token, taskId) => {
+  return await request(testApp)
+    .get(`/api/tasks/${taskId}`)
+    .set("Authorization", `Bearer ${token}`);
+};
+
+const editTask = async (token, title, taskId) => {
+  return await request(testApp)
+    .put(`/api/tasks/${taskId}`)
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      title: title,
+      description: "description",
+      completed: true,
+    });
+};
+
+const deleteTask = async (token, taskId) => {
+  return await request(testApp)
+    .delete(`/api/tasks/${taskId}`)
+    .set("Authorization", `Bearer ${token}`);
+};
 
 const createUser = async (username, password) => {
   const res = await request(testApp)

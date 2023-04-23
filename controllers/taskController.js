@@ -30,7 +30,7 @@ exports.createTask = async (req, res, next) => {
       const task = await taskService.createTask(req.user.id, taskData);
       sendResponse(res, StatusCodes.CREATED, formatTaskResponse(task));
     } else {
-      next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
+      next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR, "Forbidden"));
     }
   } catch (err) {
     next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
