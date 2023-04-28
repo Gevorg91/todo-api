@@ -7,11 +7,10 @@ const { Event } = require("../socket/event");
 const { createAbilitiesForUserPerWorkspace } = require("../casl/caslManager");
 
 const {
-  sendTaskCreatedEvent,
-  sendTaskUpdatedEvent,
   sendTaskDeletedEvent,
   sendTaskEvent,
 } = require("../socket/event_notifier");
+const { joinToRoom } = require("../socket/socket_manager");
 
 exports.createTask = async (req, res, next) => {
   const errors = validationResult(req);
@@ -37,7 +36,17 @@ exports.createTask = async (req, res, next) => {
       };
       const task = await taskService.createTask(req.user.id, taskData);
       sendResponse(res, StatusCodes.CREATED, formatTaskResponse(task));
-      await sendTaskEvent(Event.TASK_CREATED, formatTaskResponse(task));
+
+      if (req.user.socketId) {
+        const ioInstance =
+          await require("../socket/socket_io_instance").getServerIoInstance();
+        const allConnectedSockets = await ioInstance.sockets.sockets;
+        const socket = allConnectedSockets.get(req.user.socketId);
+
+        socket
+          .to(workspace)
+          .emit("TASK_CREATED", { message: formatTaskResponse(task) });
+      }
     } else {
       next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
     }

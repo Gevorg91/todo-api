@@ -6,10 +6,9 @@ exports.sendTaskEvent = async (event, task) => {
   await ioInstance.in(roomId).emit(event, task);
 };
 
-exports.sendWorkspaceEvent = async (event, workspace) => {
-  const roomId = workspace.id;
+exports.sendWorkspaceEvent = async (workspaceId, event, payload) => {
   // TODO: Fix this
   const ioInstance =
     await require("../socket/socket_io_instance").getServerIoInstance();
-  await ioInstance.in(roomId).emit(event, workspace);
+  await ioInstance.in(workspaceId).emit(event, payload);
 };

@@ -5,6 +5,9 @@ exports.createTask = async (user, taskData) => {
   const { title, description, workspace } = taskData;
   const task = new Task({ title, description, user, workspace });
   await task.save();
+  const workspaceParent = await Workspace.findById(workspace);
+  workspaceParent.tasks.push(task._id);
+  await workspaceParent.save();
   return task;
 };
 

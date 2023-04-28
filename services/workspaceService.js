@@ -6,8 +6,6 @@ exports.createWorkspace = async (userid, data) => {
   const workspace = new Workspace({ name, owner: userid });
   workspace.members.push({ user: userid, role: Role.ADMIN });
   await workspace.save();
-  // const manager = new SocketManager();
-  // await manager.joinToRoom(workspace._id);
   return workspace;
 };
 
@@ -27,8 +25,8 @@ exports.getWorkspaces = async (userId, filter) => {
       filterObj = { "members.user": userId };
       break;
   }
-
-  return Workspace.find(filterObj);
+  const workspaces = await Workspace.find(filterObj).populate("tasks");
+  return workspaces;
 };
 
 exports.getWorkspaceById = async (workspaceId, userId) => {

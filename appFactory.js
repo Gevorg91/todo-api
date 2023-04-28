@@ -17,18 +17,17 @@ const { Workspace } = require("./models/workspaceModel");
 
 const appFactory = async (appStartupConfig) => {
   await connectDB(appStartupConfig.dbUri);
-
+  // await dropDatabase();
   const app = express();
   const nodeServer = http.createServer(app);
 
   const io = initializeSocketConnection(nodeServer, {
-    origin: "*",
+    origin: ["*", "https://admin.socket.io"],
     methods: "*",
     credentials: true,
   });
 
   instrument(io, {
-    mode: "development",
     auth: false,
   });
 
@@ -57,7 +56,7 @@ const appFactory = async (appStartupConfig) => {
     const workspaces = await Workspace.find({ owner: socket.user.id });
 
     for (const workspace of workspaces) {
-      const roomId = workspace._id;
+      const roomId = workspace._id.toString();
       await joinToRoom(socket, roomId);
     }
 

@@ -24,7 +24,10 @@ exports.createWorkspace = async (req, res, next) => {
         await require("../socket/socket_io_instance").getServerIoInstance();
       const allConnectedSockets = await ioInstance.sockets.sockets;
       const socket = allConnectedSockets.get(req.user.socketId);
-      await joinToRoom(socket, workspace._id);
+      await joinToRoom(socket, workspace._id.toString());
+      socket.in(workspace._id.toString()).emit("WORKSPACE_CREATED", {
+        message: formatTaskResponse(workspace),
+      });
     }
   } catch (err) {
     console.log(err);
@@ -128,11 +131,31 @@ exports.addMember = async (req, res, next) => {
   }
 };
 
-function formatTaskResponse(workspace) {
+const formatTaskResponse = (workspace) => {
+  let members = [];
+
+  workspace.members.forEach((member) => {
+    members.push({
+      id: member._id,
+      user: member.user,
+      role: member.role,
+    });
+  });
+
+  const formattedTasks = workspace.tasks.map((response) => ({
+    id: response._id.toString(),
+    title: response.title,
+    description: response.description,
+    workspace: response.workspace.toString(),
+    completed: response.completed,
+  }));
+  console.log(formattedTasks);
+
   return {
     id: workspace._id,
     name: workspace.name,
     owner: workspace.owner,
-    members: workspace.members,
+    members,
+    tasks: formattedTasks,
   };
-}
+};
