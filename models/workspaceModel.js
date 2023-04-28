@@ -14,7 +14,7 @@ const memberSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: Object.values(Role),
-    default: Role.MEMBER,
+    default: Role.GUEST,
   },
 });
 
