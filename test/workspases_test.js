@@ -351,8 +351,8 @@ it("should not delete member workspace as a guest", async () => {
 
 
 
-//creare/get/edit/delete
-const createWorkspace = async (token, title, workspaceId) => {
+//create/get/edit/delete
+const createWorkspace = async (token, title) => {
     return await request(testApp)
         .post("/api/workspaces")
         .set("Authorization", `Bearer ${token}`)
@@ -361,7 +361,7 @@ const createWorkspace = async (token, title, workspaceId) => {
         });
 };
 
-const getWorkspaceById = async (token, taskId) => {
+const getWorkspaceById = async (token, workspaceId) => {
     return await request(testApp)
         .get(`/api/workspaces/${workspaceId}`)
         .set("Authorization", `Bearer ${token}`);
@@ -376,7 +376,7 @@ const editWorkspace = async (token, title, workspaceId) => {
         });
 };
 
-const deleteWorkspace = async (token, taskId) => {
+const deleteWorkspace = async (token, workspaceId) => {
     return await request(testApp)
         .delete(`/api/workspaces/${workspaceId}`)
         .set("Authorization", `Bearer ${token}`)
