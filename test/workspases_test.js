@@ -379,5 +379,5 @@ const editWorkspace = async (token, title, workspaceId) => {
 const deleteWorkspace = async (token, taskId) => {
     return await request(testApp)
         .delete(`/api/workspaces/${workspaceId}`)
-        .set("Authorization", `Bearer ${token}`);
-};
+        .set("Authorization", `Bearer ${token}`)
+}}
