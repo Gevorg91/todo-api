@@ -169,7 +169,6 @@ const deleteWorkspaceRequest = await deleteWorkspace(
         {title:"member workspace"}
     )
         expect(createWorkspaceResponse.statusCode).toBe(200)
-    }
 });
 
     it("should get own workspace as a member", async () => {
@@ -294,7 +293,7 @@ it("should get member workspace as a guest", async () => {
 });
 
 it("should not edit admin workspace as a guest", async () => {
-    cont createWorkspaceResponse = createWorkspace(
+    const createWorkspaceResponse = createWorkspace(
         users.user1.token,
         {title:"admin workspace"}
     )
@@ -322,7 +321,7 @@ it("should not edit member workspace as a guest", async () => {
 });
 
 it("should not delete admin workspace as a guest", async () => {
-    cont createWorkspaceResponse = await createWorkspace(
+    const createWorkspaceResponse = await createWorkspace(
         users.user1.token,
         {title:"admin workspace"}
     )
@@ -336,7 +335,7 @@ it("should not delete admin workspace as a guest", async () => {
 });
 
 it("should not delete member workspace as a guest", async () => {
-    cont createWorkspaceResponse = await createWorkspace(
+    const createWorkspaceResponse = await createWorkspace(
         users.user2.token,
         {title:"member workspace"}
     )
