@@ -1,6 +1,7 @@
 const { check } = require("express-validator");
 
 exports.validateRegister = [
+  check("email").isEmail().withMessage("Please enter a valid email address"),
   check("username")
     .notEmpty()
     .withMessage("Username is required")

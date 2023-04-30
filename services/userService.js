@@ -2,18 +2,18 @@ const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const config = require("config");
 
-exports.register = async (username, password) => {
-  let user = await User.findOne({ username: username });
+exports.register = async (username, password, email, verificationToken) => {
+  let user = await User.findOne({ email: email });
   if (user) {
     return { created: false };
   }
 
-  user = new User({ username, password });
+  user = new User({ username, password, email, verificationToken });
   await user.save();
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 
-  return { created: true, user, accessToken, refreshToken };
+  return { created: true, user, accessToken, refreshToken, verificationToken };
 };
 
 exports.login = async (username, password) => {
@@ -43,6 +43,19 @@ exports.refreshToken = async (refreshToken) => {
 
   const newAccessToken = generateAccessToken(user);
   return { valid: true, user, newAccessToken, refreshToken };
+};
+
+exports.verifyEmail = async (token) => {
+  const user = await User.findOne({ verificationToken: token });
+
+  if (!user) {
+    return { verified: false };
+  }
+
+  user.verificationToken = undefined;
+  user.emailVerified = true;
+  await user.save();
+  return { verified: true };
 };
 
 function generateAccessToken(user) {

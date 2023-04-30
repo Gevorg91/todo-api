@@ -15,5 +15,6 @@ router.post(
   userValidator.validateRefreshToken,
   userController.refreshToken
 );
+router.get("/verify-email", userController.verifyEmail);
 
 module.exports = router;
