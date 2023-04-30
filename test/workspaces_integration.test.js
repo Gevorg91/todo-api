@@ -17,7 +17,10 @@ describe("Workspaces flow tests", () => {
   beforeAll(async () => {
     await setupBeforeAll();
     testApp = await getTestApp();
+  });
 
+  beforeEach(async () => {
+    await setupBeforeEach();
     users.user1 = await createUser("user1", "Pass1234");
     users.user2 = await createUser("user2", "Pass1234");
     users.user3 = await createUser("user3", "Pass1234");
@@ -51,12 +54,9 @@ describe("Workspaces flow tests", () => {
       });
   });
 
-  beforeEach(async () => {
-    await setupBeforeEach();
-  });
-
   afterEach(async () => {
     await setupAfterEach();
+    users = {};
   });
 
   afterAll(async () => {
@@ -64,20 +64,21 @@ describe("Workspaces flow tests", () => {
     users = {};
   });
 
-  // it("should create workspace as an admin", async () => {
-  //   const createWorkspaceResponse = await createWorkspace(users.user1.token, {
-  //     title: "admin workspace",
-  //   });
-  //   expect(createWorkspaceResponse.statusCode).toBe(201);
-  // });
-
-  it("should get own workspace as an admin", async () => {
-    const createWorkspaceResponse = await createWorkspace(
+  it("should create workspace as an admin", async () => {
+    const createWorkspaceResponse = await createWorkspaceRequest(
       users.user1.token,
       "admin workspace"
     );
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
-    const getWorkspaceResponse = await getWorkspaceById(
+    expect(createWorkspaceResponse.statusCode).toBe(201);
+  });
+
+  it("should get own workspace as an admin", async () => {
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user1.token,
+      "admin workspace"
+    );
+    const createResponseBody = createWorkspaceResponse.body;
+    const getWorkspaceResponse = await getWorkspaceByIdRequest(
       users.user1.token,
       createResponseBody.id
     );
@@ -85,12 +86,14 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should get member workspace as an admin", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user2.token, {
-      title: "member workspace",
-    });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
-
-    const getWorkspaceResponse = await getWorkspaceById(
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user2.token,
+      {
+        title: "member workspace",
+      }
+    );
+    const createResponseBody = createWorkspaceResponse.body;
+    const getWorkspaceResponse = await getWorkspaceByIdRequest(
       users.user1.token,
       { title: "member worksapce" },
       createResponseBody.id
@@ -99,11 +102,13 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should edit own workspace as an admin", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user1.token, {
-      title: "admin workspace",
-    });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
-
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user1.token,
+      {
+        title: "admin workspace",
+      }
+    );
+    const createResponseBody = createWorkspaceResponse.body;
     const updateWorkspaceRequest = await editWorkspace(
       users.user1.token,
       { title: "admin workspace updated" },
@@ -114,11 +119,13 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should edit member workspace as an admin", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user2.token, {
-      title: "member workspace",
-    });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
-
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user2.token,
+      {
+        title: "member workspace",
+      }
+    );
+    const createResponseBody = createWorkspaceResponse.body;
     const updateWorkspaceRequest = await editWorkspace(
       users.user1.token,
       { title: "member workspace updated" },
@@ -128,10 +135,13 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should delete own workspace as an admin", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user1.token, {
-      title: "admin workspace",
-    });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user1.token,
+      {
+        title: "admin workspace",
+      }
+    );
+    const createResponseBody = createWorkspaceResponse.body;
     const deleteWorkspaceRequest = await deleteWorkspace(
       users.user1.token,
       { title: "admin workspace deleted" },
@@ -141,10 +151,10 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should delete member worskapce as an admin", async () => {
-    const createWorkspaceResponse = createWorkspace(users.user2.token, {
+    const createWorkspaceResponse = createWorkspaceRequest(users.user2.token, {
       title: "member workspace",
     });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createResponseBody = createWorkspaceResponse.body;
     const deleteWorkspaceRequest = await deleteWorkspace(
       users.user1.token,
       { title: "member workspace deleted" },
@@ -156,9 +166,12 @@ describe("Workspaces flow tests", () => {
   //MEMBER
 
   it("should create workspace as a member", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user2.token, {
-      title: "member workspace",
-    });
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user2.token,
+      {
+        title: "member workspace",
+      }
+    );
     expect(createWorkspaceResponse.statusCode).toBe(200);
   });
 
@@ -166,7 +179,7 @@ describe("Workspaces flow tests", () => {
     const createWorkspaceResponse = await createWorksapce(users.user2.token, {
       title: "member workspace",
     });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createResponseBody = createWorkspaceResponse.body;
     const getWorkspaceResponse = await getWorkspace(
       users.user2.token,
       { title: "member workspace" },
@@ -176,10 +189,13 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should get admin workspace as a member", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user1.token, {
-      title: "admin workspace",
-    });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user1.token,
+      {
+        title: "admin workspace",
+      }
+    );
+    const createResponseBody = createWorkspaceResponse.body;
     const getWorkspaceResponse = await getWorkspace(
       users.user2.token,
       { title: "admin workspace" },
@@ -189,10 +205,10 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should edit own workspace as a member", async () => {
-    const createWorkspaceResponse = createWorkspace(users.user2.token, {
+    const createWorkspaceResponse = createWorkspaceRequest(users.user2.token, {
       title: "member workspace",
     });
-    const createResponseBody = JSON.parse(createWorksapceResponse.text);
+    const createResponseBody = createWorkspaceResponse.body;
     const updateWorkspaceResponse = await editWorkspace(
       users.user2.token,
       { title: "member workspace updated" },
@@ -202,10 +218,10 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should edit admin workspace as a member", async () => {
-    const createWorkspaceResponse = createWorkspace(users.user1.token, {
+    const createWorkspaceResponse = createWorkspaceRequest(users.user1.token, {
       title: "admin workspace",
     });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createResponseBody = createWorkspaceResponse.body;
     const updateWorkspaceResponse = await editWorkspace(
       users.user2.token,
       { title: "admin workspace updated" },
@@ -215,10 +231,13 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should delete own workspace as a member", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user2.token, {
-      title: "member workspace",
-    });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user2.token,
+      {
+        title: "member workspace",
+      }
+    );
+    const createResponseBody = createWorkspaceResponse.body;
     const deleteWorkspaceResponse = await deleteWorkspace(
       users.user2.token,
       { title: "member workspace delete" },
@@ -231,7 +250,7 @@ describe("Workspaces flow tests", () => {
     createWorkspaceResponse = await createWorksapce(users.user1.token, {
       title: "admin workspace",
     });
-    const createResponseBody = JSON.parse(createWorksaceResponse.text);
+    const createResponseBody = createWorkspaceResponse.body;
     const deleteWorkspaceResponse = await deleteWorkspace(
       users.user2.token,
       { title: "admin workspace is not deleted" },
@@ -242,17 +261,20 @@ describe("Workspaces flow tests", () => {
 
   // GUEST
   it("should not create a workspace as a guest", async () => {
-    const createWorkspaceResponse = createWorkspace(users.user3.token, {
+    const createWorkspaceResponse = createWorkspaceRequest(users.user3.token, {
       title: "guest worskspace",
     });
-    expoect(createWorkspaceResponse.statusCode).toBe(400);
+    expect(createWorkspaceResponse.statusCode).toBe(400);
   });
 
   it("should get admin workspace as a guest", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user1.token, {
-      title: "admin workspace",
-    });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user1.token,
+      {
+        title: "admin workspace",
+      }
+    );
+    const createResponseBody = createWorkspaceResponse.body;
     const getWorkspaceResponse = await getWorkspace(
       users.user3.token,
       { title: "admin workspace" },
@@ -265,7 +287,7 @@ describe("Workspaces flow tests", () => {
     const createWorkspaceResponse = await createWorksapce(users.user2.token, {
       title: "member workspace",
     });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createResponseBody = createWorkspaceResponse.body;
     const getWorkspaceResponse = await getWorkspace(
       users.user3.token,
       { title: "member workspace" },
@@ -275,10 +297,10 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should not edit admin workspace as a guest", async () => {
-    const createWorkspaceResponse = createWorkspace(users.user1.token, {
+    const createWorkspaceResponse = createWorkspaceRequest(users.user1.token, {
       title: "admin workspace",
     });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createResponseBody = createWorkspaceResponse.body;
     const editWorkspaceResponse = await editWorkspace(
       users.user3.token,
       { title: "admin workspace" },
@@ -288,10 +310,13 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should not edit member workspace as a guest", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user2.token, {
-      title: "member workspace",
-    });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user2.token,
+      {
+        title: "member workspace",
+      }
+    );
+    const createResponseBody = createWorkspaceResponse.body;
     const editWorkspaceResponse = editWorkspace(
       users.user3.token,
       { title: "member workspace" },
@@ -301,10 +326,13 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should not delete admin workspace as a guest", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user1.token, {
-      title: "admin workspace",
-    });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user1.token,
+      {
+        title: "admin workspace",
+      }
+    );
+    const createResponseBody = createWorkspaceResponse.body;
     const deleteWorkspaceResponse = await deleteWorkspace(
       users.user3.token,
       { title: "admin worksspace" },
@@ -314,10 +342,13 @@ describe("Workspaces flow tests", () => {
   });
 
   it("should not delete member workspace as a guest", async () => {
-    const createWorkspaceResponse = await createWorkspace(users.user2.token, {
-      title: "member workspace",
-    });
-    const createResponseBody = JSON.parse(createWorkspaceResponse.text);
+    const createWorkspaceResponse = await createWorkspaceRequest(
+      users.user2.token,
+      {
+        title: "member workspace",
+      }
+    );
+    const createResponseBody = createWorkspaceResponse.body;
     const deleteWorksapceResponse = await deleteWorksapce(
       users.user3.token,
       { title: "member workspace" },
@@ -328,16 +359,16 @@ describe("Workspaces flow tests", () => {
 });
 
 //create/get/edit/delete
-const createWorkspace = async (token, title) => {
+const createWorkspaceRequest = async (token, name) => {
   return await request(testApp)
     .post("/api/workspaces")
     .set("Authorization", `Bearer ${token}`)
     .send({
-      name: title,
+      name: name,
     });
 };
 
-const getWorkspaceById = async (token, workspaceId) => {
+const getWorkspaceByIdRequest = async (token, workspaceId) => {
   return await request(testApp)
     .get(`/api/workspaces/${workspaceId}`)
     .set("Authorization", `Bearer ${token}`);
