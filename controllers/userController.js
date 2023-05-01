@@ -54,11 +54,7 @@ exports.login = async (req, res, next) => {
       );
     }
 
-    let resData = formatUserResponse(
-      result.user,
-      result.accessToken,
-      result.refreshToken
-    );
+    let resData = formatUserResponse(result);
     sendResponse(res, StatusCodes.OK, resData);
   } catch (err) {
     next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
@@ -90,11 +86,7 @@ exports.refreshToken = async (req, res, next) => {
         errorFactory(StatusCodes.UNAUTHORIZED, "Invalid refresh token")
       );
     }
-    let resData = formatUserResponse(
-      result.user,
-      result.newAccessToken,
-      result.refreshToken
-    );
+    let resData = formatUserResponse(result);
     sendResponse(res, StatusCodes.OK, resData);
   } catch (err) {
     next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
@@ -115,6 +107,78 @@ exports.verifyEmail = async (req, res, next) => {
     sendResponse(res, StatusCodes.OK, {
       message: "Email verified successfully",
     });
+  } catch (err) {
+    next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
+  }
+};
+
+exports.changePassword = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(
+      errorFactory(StatusCodes.BAD_REQUEST, "Validation error", errors.array())
+    );
+  }
+
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const result = await userService.changePassword(
+      req.user,
+      currentPassword,
+      newPassword
+    );
+
+    if (!result.success) {
+      return next(errorFactory(StatusCodes.BAD_REQUEST, result.message));
+    }
+
+    sendResponse(res, StatusCodes.OK, {
+      message: "Password changed successfully",
+    });
+  } catch (err) {
+    next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
+  }
+};
+
+exports.forgotPassword = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(
+      errorFactory(StatusCodes.BAD_REQUEST, "Validation error", errors.array())
+    );
+  }
+
+  try {
+    const { email } = req.body;
+    const result = await userService.forgotPassword(email);
+
+    if (!result.success) {
+      return next(errorFactory(StatusCodes.BAD_REQUEST, result.message));
+    }
+
+    sendResponse(res, StatusCodes.OK, { message: "Password reset email sent" });
+  } catch (err) {
+    next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
+  }
+};
+
+exports.resetPassword = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(
+      errorFactory(StatusCodes.BAD_REQUEST, "Validation error", errors.array())
+    );
+  }
+
+  try {
+    const { token, newPassword } = req.body;
+    const result = await userService.resetPassword(token, newPassword);
+
+    if (!result.success) {
+      return next(errorFactory(StatusCodes.BAD_REQUEST, result.message));
+    }
+
+    sendResponse(res, StatusCodes.OK, { message: "Password reset successful" });
   } catch (err) {
     next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
   }

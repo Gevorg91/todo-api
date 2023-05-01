@@ -22,3 +22,21 @@ exports.validateLogin = [
 exports.validateRefreshToken = [
   check("refreshToken").notEmpty().withMessage("Refresh token is required"),
 ];
+
+exports.validateChangePassword = [
+  check("currentPassword", "Current password is required").notEmpty(),
+  check(
+    "newPassword",
+    "New password is required and should be at least 6 characters long"
+  ).isLength({ min: 6 }),
+];
+
+exports.validateForgotPassword = [
+  check("email").isEmail().withMessage("Email is invalid"),
+];
+
+exports.validateResetPassword = [
+  check("newPassword")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long"),
+];
