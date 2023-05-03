@@ -21,11 +21,10 @@ describe("Tasks Flow tests", () => {
 
   beforeEach(async () => {
     await setupBeforeEach();
-    users.user1 = await createUser("user1", "Pass1234");
-    users.user2 = await createUser("user2", "Pass1234");
-    users.user3 = await createUser("user3", "Pass1234");
-    users.user4 = await createUser("user4", "Pass1234");
-
+      users.user1 = await createUser("user1", "Pass1234");
+      users.user2 = await createUser("user2", "Pass1234");
+      users.user3 = await createUser("user3", "Pass1234");
+      users.user4 = await createUser("user4", "Pass1234");
     workspace = await request(testApp)
       .post("/api/workspaces")
       .set("Authorization", `Bearer ${users.user1.token}`)
