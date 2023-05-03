@@ -1,0 +1,6 @@
+{
+    "MONGO_URI": "mongodb://localhost/todo_db_test",
+    "NODE_ENV": "test",
+    "JWT_SECRET": "5a8d56ebd6f17f6b98a6b9a6a7c6eafe6256b3ce6a3ed6b2541d5f2e2bb9c24b",
+    "JWT_REFRESH_SECRET": "d53f14c6b03a15f1e8b1435f5b0ef5ff5aaf2270a2f2e47b3826e9f6a37d6e1f3e7f6b70e6b7be8b1a3f7a527ac9c66576b8ad159a2f4c4f4d4cc1b78e0d019a"
+}

@@ -1,101 +1,171 @@
-const Task = require('../models/taskModel');
-const {errorFactory} = require('../utils/errorHandler');
-const {sendResponse} = require('../utils/responseHandler');
-const {StatusCodes} = require("../utils/statusCodes");
-const {validationResult} = require("express-validator");
+const { errorFactory } = require("../utils/errorHandler");
+const { sendResponse } = require("../utils/responseHandler");
+const { StatusCodes } = require("../utils/statusCodes");
+const { validationResult } = require("express-validator");
+const taskService = require("../services/taskService");
+const { Event } = require("../socket/event");
+const { createAbilitiesForUserPerWorkspace } = require("../casl/caslManager");
+
+const {
+  sendTaskDeletedEvent,
+  sendTaskEvent,
+} = require("../socket/event_notifier");
+const { joinToRoom } = require("../socket/socket_manager");
 
 exports.createTask = async (req, res, next) => {
-    validateRequest(req, next)
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(
+      errorFactory(StatusCodes.BAD_REQUEST, "Validation error", errors.array())
+    );
+  }
 
-    try {
-        const task = new Task({...allowedUpdates(req.body), user: req.user.id});
-        const savedTask = await task.save();
-        sendResponse(res, StatusCodes.CREATED, formatTaskResponse(savedTask));
-    } catch (err) {
-        next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
+  try {
+    const { title, description, completed, workspace } = req.body;
+    const abilities = await createAbilitiesForUserPerWorkspace(
+      req.user,
+      workspace
+    );
+
+    if (abilities.can("create", "Task")) {
+      const taskData = {
+        title,
+        description,
+        completed,
+        workspace,
+      };
+      const task = await taskService.createTask(req.user.id, taskData);
+      sendResponse(res, StatusCodes.CREATED, formatTaskResponse(task));
+
+      if (req.user.socketId) {
+        const ioInstance =
+          await require("../socket/socket_io_instance").getServerIoInstance();
+        const allConnectedSockets = await ioInstance.sockets.sockets;
+        const socket = allConnectedSockets.get(req.user.socketId);
+
+        socket
+          .to(workspace)
+          .emit("TASK_CREATED", { message: formatTaskResponse(task) });
+      }
+    } else {
+      next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR, "Forbidden"));
     }
+  } catch (err) {
+    next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
+  }
 };
 
+//TODO: Add filtering by workspace || workspace && user
 exports.getTasks = async (req, res, next) => {
-    try {
-        const tasks = await Task.find({user: req.user});
-        sendResponse(res, StatusCodes.OK, tasks.map(formatTaskResponse));
-    } catch (err) {
-        next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
-    }
+  try {
+    const tasks = await taskService.getAllTasks(req.user.id);
+    sendResponse(res, StatusCodes.OK, tasks.map(formatTaskResponse));
+  } catch (err) {
+    next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
+  }
 };
 
-exports.getTask = async (req, res, next) => {
-    try {
-        const task = await Task.findOne({_id: req.params.id, user: req.user.id});
-        if (!task) {
-            return next(errorFactory(StatusCodes.NOT_FOUND));
-        } else {
-            sendResponse(res, StatusCodes.OK, formatTaskResponse(task));
-        }
-    } catch (err) {
-        next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
+exports.getTaskById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const workspaceId = await taskService.getWorkspaceByTaskId(id);
+
+    const abilities = await createAbilitiesForUserPerWorkspace(
+      req.user,
+      workspaceId
+    );
+
+    if (abilities.can("read", "Task")) {
+      const task = await taskService.getTaskById(id);
+
+      if (!task) {
+        return next(errorFactory(StatusCodes.NOT_FOUND));
+      }
+
+      sendResponse(res, StatusCodes.OK, formatTaskResponse(task));
+    } else {
+      next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
     }
+  } catch (err) {
+    next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
+  }
 };
 
 exports.updateTask = async (req, res, next) => {
-    validateRequest(req, next)
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(
+      errorFactory(StatusCodes.BAD_REQUEST, "Validation error", errors.array())
+    );
+  }
 
-    try {
-        const task = await Task.findOneAndUpdate(
-            {_id: req.params.id, user: req.user.id},
-            {$set: allowedUpdates(req.body)},
-            {new: true}
-        );
-        if (!task) {
-            return next(errorFactory(StatusCodes.NOT_FOUND, 'Task not found'));
-        }
-        await task.save();
-        sendResponse(res, StatusCodes.OK, formatTaskResponse(task));
-    } catch (err) {
-        next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR, err.message));
+  try {
+    const { id } = req.params;
+    const { title, description, status } = req.body;
+    const workspaceId = await taskService.getWorkspaceByTaskId(id);
+
+    const abilities = await createAbilitiesForUserPerWorkspace(
+      req.user,
+      workspaceId
+    );
+
+    if (abilities.can("update", "Task")) {
+      const taskData = {
+        title,
+        description,
+        status,
+      };
+
+      const updatedTask = await taskService.updateTask(id, taskData);
+
+      if (!updatedTask) {
+        return next(errorFactory(StatusCodes.NOT_FOUND));
+      }
+
+      sendResponse(res, StatusCodes.OK, formatTaskResponse(updatedTask));
+      await sendTaskEvent(Event.TASK_UPDATED, formatTaskResponse(updatedTask));
+    } else {
+      next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
     }
+  } catch (err) {
+    next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
+  }
 };
 
 exports.deleteTask = async (req, res, next) => {
-    try {
-        const task = await Task.findOneAndDelete({_id: req.params.id, user: req.user.id});
-        if (!task) {
-            return next(errorFactory(StatusCodes.NOT_FOUND));
-        } else {
-            sendResponse(res, StatusCodes.OK, formatTaskResponse(task))
-        }
-    } catch (err) {
-        next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
-    }
-};
+  try {
+    const { id } = req.params;
+    const workspaceId = await taskService.getWorkspaceByTaskId(id);
 
-function validateRequest(req, next) {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return next(errorFactory(StatusCodes.BAD_REQUEST, 'Validation error', errors.array()));
+    const abilities = await createAbilitiesForUserPerWorkspace(
+      req.user,
+      workspaceId
+    );
+
+    if (abilities.can("delete", "Task")) {
+      const { id } = req.params;
+      const isDeleted = await taskService.deleteTask(id);
+
+      if (!isDeleted) {
+        return next(errorFactory(StatusCodes.NOT_FOUND));
+      }
+
+      sendResponse(res, StatusCodes.OK);
+    } else {
+      next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
     }
-}
+  } catch (err) {
+    next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
+  }
+};
 
 function formatTaskResponse(task) {
-    return {
-        id: task._id,
-        title: task.title,
-        description: task.description,
-        completed: task.completed,
-        user: task.user,
-    };
+  return {
+    id: task._id,
+    title: task.title,
+    description: task.description,
+    workspace: task.workspace,
+    completed: task.completed,
+    user: task.user,
+  };
 }
-
-const allowedUpdates = (body) => {
-    const allowedFields = ['title', 'description', 'completed'];
-    const updates = {};
-
-    for (const field of allowedFields) {
-        if (body.hasOwnProperty(field)) {
-            updates[field] = body[field];
-        }
-    }
-
-    return updates;
-};
