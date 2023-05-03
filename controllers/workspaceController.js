@@ -3,6 +3,7 @@ const { errorFactory } = require("../utils/errorHandler");
 const { StatusCodes } = require("../utils/statusCodes");
 const { sendResponse } = require("../utils/responseHandler");
 const workspaceService = require("../services/workspaceService");
+const { joinToRoom } = require("../socket/socket_manager");
 
 exports.createWorkspace = async (req, res, next) => {
   const errors = validationResult(req);
@@ -17,7 +18,19 @@ exports.createWorkspace = async (req, res, next) => {
     const data = { name };
     const workspace = await workspaceService.createWorkspace(req.user.id, data);
     sendResponse(res, StatusCodes.CREATED, formatTaskResponse(workspace));
+    if (req.user.socketId) {
+      // TODO: Fix this
+      const ioInstance =
+        await require("../socket/socket_io_instance").getServerIoInstance();
+      const allConnectedSockets = await ioInstance.sockets.sockets;
+      const socket = allConnectedSockets.get(req.user.socketId);
+      await joinToRoom(socket, workspace._id.toString());
+      socket.in(workspace._id.toString()).emit("WORKSPACE_CREATED", {
+        message: formatTaskResponse(workspace),
+      });
+    }
   } catch (err) {
+    console.log(err);
     next(errorFactory(StatusCodes.INTERNAL_SERVER_ERROR));
   }
 };
@@ -118,11 +131,31 @@ exports.addMember = async (req, res, next) => {
   }
 };
 
-function formatTaskResponse(workspace) {
+const formatTaskResponse = (workspace) => {
+  let members = [];
+
+  workspace.members.forEach((member) => {
+    members.push({
+      id: member._id,
+      user: member.user,
+      role: member.role,
+    });
+  });
+
+  const formattedTasks = workspace.tasks.map((response) => ({
+    id: response._id.toString(),
+    title: response.title,
+    description: response.description,
+    workspace: response.workspace.toString(),
+    completed: response.completed,
+  }));
+  console.log(formattedTasks);
+
   return {
     id: workspace._id,
     name: workspace.name,
     owner: workspace.owner,
-    members: workspace.members,
+    members,
+    tasks: formattedTasks,
   };
-}
+};

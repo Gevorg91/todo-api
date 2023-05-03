@@ -18,6 +18,13 @@ const memberSchema = new mongoose.Schema({
   },
 });
 
+const taskSchema = new mongoose.Schema({
+  workspace: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+});
+
 const workspaceSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -28,6 +35,12 @@ const workspaceSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  tasks: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Task",
+    },
+  ],
   members: [memberSchema],
 });
 

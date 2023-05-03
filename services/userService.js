@@ -31,12 +31,11 @@ exports.login = async (username, password) => {
 
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
-
   return { authenticated: true, user, accessToken, refreshToken };
 };
 
 exports.refreshToken = async (refreshToken) => {
-  const decoded = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET);
+  const decoded = jwt.verify(refreshToken, config.get("JWT_REFRESH_SECRET"));
   const user = await User.findById(decoded.user.id);
 
   if (!user) {
@@ -138,10 +137,12 @@ async function sendPasswordResetEmail(user, resetToken) {
 
 function generateAccessToken(user) {
   const payload = { user: { id: user.id } };
-  return jwt.sign(payload, config.JWT_SECRET, { expiresIn: "100d" });
-}
+  return jwt.sign(payload, config.get("JWT_SECRET"), { expiresIn: "100d" });
+};
 
-function generateRefreshToken(user) {
+const generateRefreshToken = (user) => {
   const payload = { user: { id: user.id } };
-  return jwt.sign(payload, config.JWT_REFRESH_SECRET, { expiresIn: "400d" });
-}
+  return jwt.sign(payload, config.get("JWT_REFRESH_SECRET"), {
+    expiresIn: "400d",
+  });
+};

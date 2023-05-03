@@ -1,4 +1,5 @@
 const { Workspace, Role } = require("../models/workspaceModel");
+const SocketManager = require("../socket/socket_manager");
 
 exports.createWorkspace = async (userid, data) => {
   const { name } = data;
@@ -24,8 +25,8 @@ exports.getWorkspaces = async (userId, filter) => {
       filterObj = { "members.user": userId };
       break;
   }
-
-  return Workspace.find(filterObj);
+  const workspaces = await Workspace.find(filterObj).populate("tasks");
+  return workspaces;
 };
 
 exports.getWorkspaceById = async (workspaceId, userId) => {

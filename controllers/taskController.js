@@ -3,7 +3,14 @@ const { sendResponse } = require("../utils/responseHandler");
 const { StatusCodes } = require("../utils/statusCodes");
 const { validationResult } = require("express-validator");
 const taskService = require("../services/taskService");
+const { Event } = require("../socket/event");
 const { createAbilitiesForUserPerWorkspace } = require("../casl/caslManager");
+
+const {
+  sendTaskDeletedEvent,
+  sendTaskEvent,
+} = require("../socket/event_notifier");
+const { joinToRoom } = require("../socket/socket_manager");
 
 exports.createTask = async (req, res, next) => {
   const errors = validationResult(req);
@@ -29,6 +36,17 @@ exports.createTask = async (req, res, next) => {
       };
       const task = await taskService.createTask(req.user.id, taskData);
       sendResponse(res, StatusCodes.CREATED, formatTaskResponse(task));
+
+      if (req.user.socketId) {
+        const ioInstance =
+          await require("../socket/socket_io_instance").getServerIoInstance();
+        const allConnectedSockets = await ioInstance.sockets.sockets;
+        const socket = allConnectedSockets.get(req.user.socketId);
+
+        socket
+          .to(workspace)
+          .emit("TASK_CREATED", { message: formatTaskResponse(task) });
+      }
     } else {
       next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR, "Forbidden"));
     }
@@ -105,6 +123,7 @@ exports.updateTask = async (req, res, next) => {
       }
 
       sendResponse(res, StatusCodes.OK, formatTaskResponse(updatedTask));
+      await sendTaskEvent(Event.TASK_UPDATED, formatTaskResponse(updatedTask));
     } else {
       next(errorFactory(StatusCodes.ABILITIES_VALIDATION_ERROR));
     }
